@@ -130,6 +130,8 @@ class Workfile:
 
 class WorkfileSectionFiltered:
     def __init__(self, sec, start, end):
+        assert isinstance(sec, WorkfileSection)
+
         self.section = sec
         self.start_date = start
         self.end_date = end
@@ -149,6 +151,11 @@ class WorkfileSectionFiltered:
             if e.date < self.end_date and e.date >= self.start_date:
                 ret.append(e)
         return ret
+
+    def filter(self, start, end):
+        start = max(start, self.start_date)
+        end = min(end, self.end_date)
+        return WorkfileSectionFiltered(self.section, start, end)
 
     def __str__(self):
         prependtitle_comment = [self.title_comment]
