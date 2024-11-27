@@ -478,6 +478,7 @@ def main():
     parser.add_argument("--print-ics", "-p", action="store_true", help="Afficher tout le contenu du ficher ICS")
     parser.add_argument("--show-diff", "-d", action="store_true", help="Afficher les différences prêtes à être appliquées")
     parser.add_argument("--write", action="store_true", help="Écrase le workfile avec la nouvelle version")
+    parser.add_argument("--force", "-f", action="store_true", help="Avec --write, écrit le fichier sans demander de confirmation")
     parser.add_argument("--verbose", "-v", action="count", default=0, help="Augmente le niveau de verbosité")
     parser.add_argument("--quiet", "-q", action="count", default=0, help="Diminue le niveau de verbosité")
 
@@ -488,6 +489,7 @@ def main():
     print_ics = args.print_ics
     show_diff = args.show_diff
     write = args.write
+    force = args.force
     verbose = args.verbose - args.quiet
 
     loglevels = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "NOTSET"]
@@ -501,7 +503,10 @@ def main():
         logging.critical("No workfile specified")
         return 1
 
-    if write and not show_diff:
+    if force and not write:
+        logging.info("--force used without --write is ignored")
+
+    if write and not force and not show_diff:
         logging.debug("--write will ask for confirmation, enabling --show-diff")
         show_diff = True
 
@@ -530,7 +535,7 @@ def main():
     if show_diff:
         subprocess.call(["diff", "--color", "--text", "--unified", "--show-function-line=^#", workfile, newworkfile])
 
-    if write:
+    if write and not force:
         res = input("Write these changes? [yN] ")
         if not res or res not in "yY":
             logging.info("Not writing the changes. New version still accessible in: %s", newworkfile)
