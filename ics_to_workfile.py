@@ -501,6 +501,10 @@ def main():
         logging.critical("No workfile specified")
         return 1
 
+    if write and not show_diff:
+        logging.debug("--write will ask for confirmation, enabling --show-diff")
+        show_diff = True
+
     logging.info("Reading ics file: %s", icsfilename)
     icswf = ics_to_workfile(icsfilename)
 
@@ -525,6 +529,12 @@ def main():
 
     if show_diff:
         subprocess.call(["diff", "--color", "--text", "--unified", "--show-function-line=^#", workfile, newworkfile])
+
+    if write:
+        res = input("Write these changes? [yN] ")
+        if not res or res not in "yY":
+            logging.info("Not writing the changes. New version still accessible in: %s", newworkfile)
+            write = False
 
     if write:
         bakworkfile = workfile + ".bak"
