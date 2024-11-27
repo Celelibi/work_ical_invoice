@@ -521,7 +521,7 @@ def main():
         print("", file=fp)
 
     if show_diff:
-        subprocess.call(["diff", "--color", "--text", "--unified", workfile, newworkfile])
+        subprocess.call(["diff", "--color", "--text", "--unified", "--show-function-line=^#", workfile, newworkfile])
 
 
 
