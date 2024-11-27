@@ -10,6 +10,7 @@ import logging
 import logging.config
 import os
 import subprocess
+import shutil
 import sys
 
 import icalendar
@@ -476,6 +477,7 @@ def main():
     parser.add_argument("--workfile", "-w", help="Fichier Workfile à mettre à jour")
     parser.add_argument("--print-ics", "-p", action="store_true", help="Afficher tout le contenu du ficher ICS")
     parser.add_argument("--show-diff", "-d", action="store_true", help="Afficher les différences prêtes à être appliquées")
+    parser.add_argument("--write", action="store_true", help="Écrase le workfile avec la nouvelle version")
     parser.add_argument("--verbose", "-v", action="count", default=0, help="Augmente le niveau de verbosité")
     parser.add_argument("--quiet", "-q", action="count", default=0, help="Diminue le niveau de verbosité")
 
@@ -485,6 +487,7 @@ def main():
     workfile = args.workfile
     print_ics = args.print_ics
     show_diff = args.show_diff
+    write = args.write
     verbose = args.verbose - args.quiet
 
     loglevels = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "NOTSET"]
@@ -522,6 +525,12 @@ def main():
 
     if show_diff:
         subprocess.call(["diff", "--color", "--text", "--unified", "--show-function-line=^#", workfile, newworkfile])
+
+    if write:
+        bakworkfile = workfile + ".bak"
+        logging.info("Writing changes to %s, old workfile copied to %s", workfile, bakworkfile)
+        shutil.move(workfile, bakworkfile)
+        shutil.move(newworkfile, workfile)
 
 
 
