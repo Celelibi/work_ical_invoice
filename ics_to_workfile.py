@@ -359,10 +359,12 @@ def partial_entry_matches(entry, entries):
 def update_course(wf, newsec, icsstart, icsend):
     logging.debug("Updating workfile for section :%s", newsec.title)
 
-    wff = wf.filter(icsstart, icsend, newsec.title)
+    sec_search_start = icsstart - datetime.timedelta(days=92)
+    sec_search_end = icsend + datetime.timedelta(days=92)
+    wff = wf.filter(sec_search_start, sec_search_end, newsec.title)
 
     if len(wff.sections) > 1:
-        logging.error("Several sections in the workfile match the date interval: %s to %s with the name%s", icsstart, icsend, newsec.title)
+        logging.error("Several sections in the workfile match the date interval: %s to %s with the name%s", sec_search_start, sec_search_end, newsec.title)
         logging.error("Not doing anything about it!")
         return
 
@@ -372,7 +374,7 @@ def update_course(wf, newsec, icsstart, icsend):
         wf.sections.append(newsec)
         return
 
-    wffsec = wff.sections[0]
+    wffsec = wff.sections[0].filter(icsstart, icsend)
     wfsec = wffsec.section
 
     newsec_entries = collections.Counter(newsec.full_entries)
