@@ -467,6 +467,10 @@ def update_course(wf, newsec, icsstart, icsend):
     for removed_entry in removed_entries.elements():
         wfsec.entries.remove(removed_entry)
 
+    if not added_entries and not removed_entries:
+        logging.debug("Not trying to sort an untouched section")
+        return
+
     try:
         wfsec.sort()
     except UnsortableError as e:
