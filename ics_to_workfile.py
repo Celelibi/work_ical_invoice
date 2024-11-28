@@ -186,7 +186,8 @@ def update_course(wf, newsec, icsstart, icsend):
         return
 
     if len(wff.sections) > 1:
-        logging.error("Several sections in the workfile match the date interval: %s to %s with the name%s", sec_search_start, sec_search_end, newsec.title)
+        logging.error("Several sections in the workfile match the date interval: "
+                      "%s to %s with the name%s", sec_search_start, sec_search_end, newsec.title)
         logging.error("Not doing anything about it!")
         return
 
@@ -234,7 +235,8 @@ def update_course(wf, newsec, icsstart, icsend):
             wfsec.entries[idx].hours = added_entry.hours
 
         elif len(dateratematch) > 1 and dateratematch_hours < added_entry.hours:
-            logging.debug("Found partial matches that don't add up to the amount of hours for: %s", added_entry)
+            logging.debug("Found partial matches that don't add up to the amount "
+                          "of hours for: %s", added_entry)
             for e in dateratematch:
                 logging.debug("Partial-match: %s", e)
                 removed_entries[e] -= 1
@@ -270,7 +272,8 @@ def update_course(wf, newsec, icsstart, icsend):
         datematch, _, _ = partial_entry_matches(added_entry, removed_entries)
 
         if len(datematch) > 0:
-            logging.warning("Found matches for date but hours and rate don't match: %s", added_entry)
+            logging.warning("Found matches for date but hours and rate don't match: %s",
+                            added_entry)
             for e in datematch:
                 logging.warning("Non-match: %s", e)
             logging.warning("Replacing with entry: %s", added_entry)
@@ -299,18 +302,27 @@ def update_course(wf, newsec, icsstart, icsend):
 
 def main():
     locale.setlocale(locale.LC_ALL, '')
-    logging.config.fileConfig(os.path.join(SELFPATH, "logconf.ini"), disable_existing_loggers=False)
+    logging.config.fileConfig(os.path.join(SELFPATH, "logconf.ini"),
+                              disable_existing_loggers=False)
 
     parser = argparse.ArgumentParser(description="Met à jour un Workfile à partir d'un ICS")
     parser.add_argument("ics", help="Fichier ICS")
-    parser.add_argument("--rate", "-r", type=decimal.Decimal, help="TJM supposé")
-    parser.add_argument("--workfile", "-w", help="Fichier Workfile à mettre à jour")
-    parser.add_argument("--print-ics", "-p", action="store_true", help="Afficher tout le contenu du ficher ICS")
-    parser.add_argument("--show-diff", "-d", action="store_true", help="Afficher les différences prêtes à être appliquées")
-    parser.add_argument("--write", action="store_true", help="Écrase le workfile avec la nouvelle version")
-    parser.add_argument("--force", "-f", action="store_true", help="Avec --write, écrit le fichier sans demander de confirmation")
-    parser.add_argument("--verbose", "-v", action="count", default=0, help="Augmente le niveau de verbosité")
-    parser.add_argument("--quiet", "-q", action="count", default=0, help="Diminue le niveau de verbosité")
+    parser.add_argument("--rate", "-r", type=decimal.Decimal,
+                        help="TJM supposé")
+    parser.add_argument("--workfile", "-w",
+                        help="Fichier Workfile à mettre à jour")
+    parser.add_argument("--print-ics", "-p", action="store_true",
+                        help="Afficher tout le contenu du ficher ICS")
+    parser.add_argument("--show-diff", "-d", action="store_true",
+                        help="Afficher les différences prêtes à être appliquées")
+    parser.add_argument("--write", action="store_true",
+                        help="Écrase le workfile avec la nouvelle version")
+    parser.add_argument("--force", "-f", action="store_true",
+                        help="Avec --write, écrit le fichier sans demander de confirmation")
+    parser.add_argument("--verbose", "-v", action="count", default=0,
+                        help="Augmente le niveau de verbosité")
+    parser.add_argument("--quiet", "-q", action="count", default=0,
+                        help="Diminue le niveau de verbosité")
 
     args = parser.parse_args()
 
@@ -342,7 +354,8 @@ def main():
         show_diff = True
 
     if not (print_ics or show_diff or write):
-        logging.warning("No --print-ics or --show-diff or --write specified. Nothing to do, exiting now.")
+        logging.warning("No --print-ics or --show-diff or --write specified. "
+                        "Nothing to do, exiting now.")
         return
 
     logging.info("Reading ics file: %s", icsfilename)
@@ -372,17 +385,20 @@ def main():
         print("", file=fp)
 
     if show_diff:
-        subprocess.call(["diff", "--color", "--text", "--unified", "--show-function-line=^#", workfilename, newworkfile])
+        subprocess.call(["diff", "--color", "--text", "--unified", "--show-function-line=^#",
+                         workfilename, newworkfile])
 
     if write and not force:
         res = input("Write these changes? [yN] ")
         if not res or res not in "yY":
-            logging.info("Not writing the changes. New version still accessible in: %s", newworkfile)
+            logging.info("Not writing the changes. New version still accessible in: %s",
+                         newworkfile)
             write = False
 
     if write:
         bakworkfile = workfilename + ".bak"
-        logging.info("Writing changes to %s, old workfile copied to %s", workfilename, bakworkfile)
+        logging.info("Writing changes to %s, old workfile copied to %s",
+                     workfilename, bakworkfile)
         shutil.move(workfilename, bakworkfile)
         shutil.move(newworkfile, workfilename)
 
