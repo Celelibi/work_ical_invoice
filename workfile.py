@@ -1,3 +1,5 @@
+"""Set of classes and functions to represent and manipulate a workfile."""
+
 import dataclasses
 import datetime
 import decimal
@@ -7,18 +9,29 @@ import more_itertools
 
 
 class UnsortableError(ValueError):
-    pass
+    """Raised when asking to sort the entries of a section containing comment
+    entries."""
 
 
 
 @dataclasses.dataclass
 class WorkfileEntry:
-    pass
+    """Base class for the workfile entries."""
 
 
 
 @dataclasses.dataclass(order=True, unsafe_hash=True)
 class WorkfileEntryFull(WorkfileEntry):
+    """Full entry of a workfile.
+
+    It contains the following fields:
+        - date: The date the work happened at
+        - hours: The number of hours worked
+        - rate: How many euro per hour will be paid for it
+        - comment: The one-line comment string at the end of the line. Or None.
+        - prespaces: The number of spaces before the comment. Irrelevant if comment is None.
+    """
+
     date: datetime.date
     hours: decimal.Decimal
     rate: decimal.Decimal
@@ -36,6 +49,8 @@ class WorkfileEntryFull(WorkfileEntry):
 
 @dataclasses.dataclass
 class WorkfileEntryComment(WorkfileEntry):
+    """An workfile entry consisting of a single comment and nothing else."""
+
     comment: str
 
     def __str__(self):
@@ -45,6 +60,13 @@ class WorkfileEntryComment(WorkfileEntry):
 
 @dataclasses.dataclass
 class WorkfileSection:
+    """A workfile section.
+
+    A section is a set of lines in the workfile separated by blank lines.
+    If the first few lines of a section are comments, they are considered the
+    title of the section. The titles can be used to identify the sections.
+    """
+
     entries: list
 
     def _title_comment_count(self):
@@ -96,6 +118,8 @@ class WorkfileSection:
 
 @dataclasses.dataclass
 class Workfile:
+    """A workfile is basically a list of sections."""
+
     sections: list
 
     def first_date(self):
@@ -113,6 +137,12 @@ class Workfile:
 
 
 class WorkfileSectionFiltered:
+    """Section of a date-filtered workfile.
+
+    Sections can be filtered by date so that only entries between two dates are
+    returned.
+    """
+
     def __init__(self, sec, start, end):
         assert isinstance(sec, WorkfileSection)
 
@@ -150,6 +180,14 @@ class WorkfileSectionFiltered:
 
 
 class WorkfileFiltered:
+    """A Workfile filtered by date and optionally by title.
+
+    The filter is based on the date and section titles.
+    The sections accessible are filtered by date. Only sections containing
+    non-comment entries are accessible.
+    If a filter title is given, only the sections with the given title are
+    accessible. If not given (or None), no title restriction is placed.
+    """
     def __init__(self, wf, start, end, title=None):
         self.workfile = wf
         self.start_date = start
