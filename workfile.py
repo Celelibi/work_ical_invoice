@@ -302,7 +302,6 @@ def read_workfile(workfilename):
     """Read a workfile and return an instance of Workfile."""
 
     wf = Workfile([])
-    state = "workfile"
 
     with open(workfilename) as fp:
         while True:
