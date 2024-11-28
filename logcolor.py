@@ -13,7 +13,7 @@ class ColorLogFormatter(logging.Formatter):
     }
 
     def __init__(self, *args, **kwargs):
-        super(ColorLogFormatter, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         colorama.init()
 
     def colorname(self, name):
@@ -22,4 +22,4 @@ class ColorLogFormatter(logging.Formatter):
 
     def format(self, record):
         record.levelnamecolor = self.colorname(record.levelname)
-        return super(ColorLogFormatter, self).format(record)
+        return super().format(record)
