@@ -567,6 +567,10 @@ def main():
         logging.debug("--write will ask for confirmation, enabling --show-diff")
         show_diff = True
 
+    if not (print_ics or show_diff or write):
+        logging.warning("No --print-ics or --show-diff or --write specified. Nothing to do, exiting now.")
+        return
+
     logging.info("Reading ics file: %s", icsfilename)
     icswf = ics_to_workfile(icsfilename, rate)
 
