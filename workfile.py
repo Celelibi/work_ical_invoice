@@ -178,7 +178,7 @@ class WorkfileFiltered:
 
 
 
-def read_workfile_section(fp):
+def _read_workfile_section(fp):
     fp = more_itertools.peekable(fp)
 
     entries = []
@@ -223,7 +223,7 @@ def read_workfile(workfilename):
     with open(workfilename) as fp:
         while True:
             try:
-                wf.sections.append(read_workfile_section(fp))
+                wf.sections.append(_read_workfile_section(fp))
             except StopIteration:
                 break
 
