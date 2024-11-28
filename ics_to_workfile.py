@@ -324,11 +324,11 @@ def read_workfile_section(fp):
 
 
 
-def read_workfile(workfile):
+def read_workfile(workfilename):
     wf = Workfile([])
     state = "workfile"
 
-    with open(workfile) as fp:
+    with open(workfilename) as fp:
         while True:
             try:
                 wf.sections.append(read_workfile_section(fp))
@@ -542,7 +542,7 @@ def main():
 
     icsfilename = args.ics
     rate = args.rate
-    workfile = args.workfile
+    workfilename = args.workfile
     print_ics = args.print_ics
     show_diff = args.show_diff
     write = args.write
@@ -556,7 +556,7 @@ def main():
     verbose = min(len(loglevels) - 1, max(0, curlevel + verbose))
     ch.setLevel(loglevels[verbose])
 
-    if workfile is None and (show_diff or write):
+    if workfilename is None and (show_diff or write):
         logging.critical("No workfile specified")
         return 1
 
@@ -577,7 +577,7 @@ def main():
     if print_ics:
         print(icswf)
 
-    if workfile is None:
+    if workfilename is None:
         logging.debug("No workfile specified, exiting")
         return
 
@@ -587,18 +587,18 @@ def main():
     icsstart -= datetime.timedelta(days=icsstart.weekday())
     icsend += datetime.timedelta(days=7 - icsend.weekday())
 
-    logging.info("Reading workfile %s", workfile)
-    wf = read_workfile(workfile)
+    logging.info("Reading workfile %s", workfilename)
+    wf = read_workfile(workfilename)
     for sec in icswf.sections:
         update_course(wf, sec, icsstart, icsend)
 
-    newworkfile = workfile + ".new"
+    newworkfile = workfilename + ".new"
     with open(newworkfile, "w") as fp:
         print(wf, file=fp)
         print("", file=fp)
 
     if show_diff:
-        subprocess.call(["diff", "--color", "--text", "--unified", "--show-function-line=^#", workfile, newworkfile])
+        subprocess.call(["diff", "--color", "--text", "--unified", "--show-function-line=^#", workfilename, newworkfile])
 
     if write and not force:
         res = input("Write these changes? [yN] ")
@@ -607,10 +607,10 @@ def main():
             write = False
 
     if write:
-        bakworkfile = workfile + ".bak"
-        logging.info("Writing changes to %s, old workfile copied to %s", workfile, bakworkfile)
-        shutil.move(workfile, bakworkfile)
-        shutil.move(newworkfile, workfile)
+        bakworkfile = workfilename + ".bak"
+        logging.info("Writing changes to %s, old workfile copied to %s", workfilename, bakworkfile)
+        shutil.move(workfilename, bakworkfile)
+        shutil.move(newworkfile, workfilename)
 
 
 
