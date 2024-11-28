@@ -16,10 +16,10 @@ class ColorLogFormatter(logging.Formatter):
         super().__init__(*args, **kwargs)
         colorama.init()
 
-    def colorname(self, name):
+    def _colorname(self, name):
         s = self.namecolors.get(name, "")
         return colorama.Style.BRIGHT + s + name + colorama.Style.RESET_ALL
 
     def format(self, record):
-        record.levelnamecolor = self.colorname(record.levelname)
+        record.levelnamecolor = self._colorname(record.levelname)
         return super().format(record)
