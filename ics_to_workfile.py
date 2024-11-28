@@ -556,7 +556,7 @@ def main():
     verbose = min(len(loglevels) - 1, max(0, curlevel + verbose))
     ch.setLevel(loglevels[verbose])
 
-    if workfile is None:
+    if workfile is None and (show_diff or write):
         logging.critical("No workfile specified")
         return 1
 
@@ -572,6 +572,10 @@ def main():
 
     if print_ics:
         print(icswf)
+
+    if workfile is None:
+        logging.debug("No workfile specified, exiting")
+        return
 
     # Plannings are sent by full weeks, sometimes more than one at a time.
     icsstart = icswf.first_date()
