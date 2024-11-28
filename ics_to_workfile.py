@@ -259,7 +259,7 @@ def structure_by_date(cal):
 
 
 
-def ics_to_workfile(ics):
+def ics_to_workfile(ics, rate):
     with open(ics) as fp:
         cal = icalendar.Calendar.from_ical(fp.read())
 
@@ -278,7 +278,7 @@ def ics_to_workfile(ics):
         sec = WorkfileSection([WorkfileEntryComment(sectitle_comment)])
         for date, evs in bydate.items():
             total_duration = sum_events_duration(evs).normalize()
-            entry = WorkfileEntryFull(date, total_duration, 80)
+            entry = WorkfileEntryFull(date, total_duration, rate)
             sec.entries.append(entry)
         wf.sections.append(sec)
 
@@ -529,6 +529,7 @@ def main():
 
     parser = argparse.ArgumentParser(description="Met à jour un Workfile à partir d'un ICS")
     parser.add_argument("ics", help="Fichier ICS")
+    parser.add_argument("--rate", "-r", type=decimal.Decimal, help="TJM supposé")
     parser.add_argument("--workfile", "-w", help="Fichier Workfile à mettre à jour")
     parser.add_argument("--print-ics", "-p", action="store_true", help="Afficher tout le contenu du ficher ICS")
     parser.add_argument("--show-diff", "-d", action="store_true", help="Afficher les différences prêtes à être appliquées")
@@ -540,6 +541,7 @@ def main():
     args = parser.parse_args()
 
     icsfilename = args.ics
+    rate = args.rate
     workfile = args.workfile
     print_ics = args.print_ics
     show_diff = args.show_diff
@@ -566,7 +568,7 @@ def main():
         show_diff = True
 
     logging.info("Reading ics file: %s", icsfilename)
-    icswf = ics_to_workfile(icsfilename)
+    icswf = ics_to_workfile(icsfilename, rate)
 
     if print_ics:
         print(icswf)
