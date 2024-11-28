@@ -22,6 +22,8 @@ SELFPATH = os.path.dirname(os.path.realpath(sys.argv[0]))
 
 
 def logging_getHandler(name):
+    """Get the logging handler with the given name."""
+
     for h in logging.getLogger().handlers:
         if h.name == name:
             return h
@@ -30,7 +32,18 @@ def logging_getHandler(name):
 
 
 def dedup(objs, eqfunc=None, hashfunc=None):
+    """Remove duplicate objects as with list(set(objs)) but with custom
+    equality and / or hash functions.
+
+    If given, the comparison is based on the equality function. If not, native
+    == operator is used.
+    If given, the hash function is used to make the objects hashable. If not
+    given, the builtin hash function is used on the objects.
+    """
+
     class Wrapper:
+        """Wrapper to allow to hash and test equality of any object."""
+
         def __init__(self, obj):
             self.obj = obj
 
@@ -49,6 +62,11 @@ def dedup(objs, eqfunc=None, hashfunc=None):
 
 
 def partition(it, keyfunc):
+    """Partition an iterable according to a key function.
+
+    Return a dict with one entry per key value as returned by keyfunc.
+    """
+
     retval = collections.defaultdict(list)
     for e in it:
         retval[keyfunc(e)].append(e)
@@ -57,6 +75,10 @@ def partition(it, keyfunc):
 
 
 def sorted_dict(d, sortkey=None):
+    """Return an OrderedDict with keys sorted.
+
+    If sortkey is given, use it as argument to the function 'sorted'."""
+
     retval = collections.OrderedDict()
     for k in sorted(d, key=sortkey):
         retval[k] = d[k]
@@ -65,11 +87,15 @@ def sorted_dict(d, sortkey=None):
 
 
 def sum_events_duration(events):
+    """Sum the events duration from a structure returned by icalendar."""
+
     return sum(decimal.Decimal((e["DTEND"].dt - e["DTSTART"].dt).seconds) / 60 / 60 for e in events)
 
 
 
 def structure_by_date(cal):
+    """Take an icalendar Calendar and return the events partitionned by SUMMARY and DESCRIPTION."""
+
     events = cal.walk("VEVENT")
     events = dedup(events, hashfunc=lambda e: hash(e.to_ical()))
     events.sort(key=lambda e: e["DTSTART"].dt)
@@ -87,6 +113,12 @@ def structure_by_date(cal):
 
 
 def ics_to_workfile(ics, rate):
+    """Build a Workfile from an ics file.
+
+    The hourly rate of the created Workfile has to be given as argument since
+    it's not contained in the ics file.
+    """
+
     with open(ics) as fp:
         cal = icalendar.Calendar.from_ical(fp.read())
 
@@ -114,6 +146,8 @@ def ics_to_workfile(ics, rate):
 
 
 def levenshtein(s1, s2):
+    """Levenshtein distance between two strings."""
+
     prevrow = list(range(len(s2) + 1))
 
     for i1, c1 in enumerate(s1, 1):
@@ -128,22 +162,38 @@ def levenshtein(s1, s2):
 
 
 def approx_score(s1, s2):
+    """Score of "likeness" of two strings.
+
+    This scoring function tries to use a bag-of-word model where the order of
+    the words doesn't matter.
+    For each word of the first string, it finds the best match among the words
+    of the second string.
+    The final score is the sum of all the best-match scores.
+    """
+
     l1 = s1.lower().split()
     l2 = s2.lower().split()
     return sum(min(levenshtein(w1, w2) for w2 in l2) for w1 in l1)
 
 
 
-def approx_match(screw, haystack):
-    """
-    This function looks for a screw (not quite a nail) in a haystack. It
-    returns the matching nail.
-    """
-    return min(haystack, key=lambda hay: approx_score(screw, hay))
+def approx_match(nail, haystack):
+    """This function looks for a nail (not quite a needle) in a haystack. It
+    returns the matching needle."""
+
+    return min(haystack, key=lambda hay: approx_score(nail, hay))
 
 
 
 def partial_entry_matches(entry, entries):
+    """Finds partial matches between one workfile entry and a list of entries.
+
+    It returns 3 lists of entries:
+        - The list of entries that match only the date.
+        - The list of entries that match the date and number of hours.
+        - The list of entries that match the date and rate.
+    """
+
     datematch = []
     datehoursmatch = []
     dateratematch = []
@@ -161,6 +211,15 @@ def partial_entry_matches(entry, entries):
 
 
 def update_course(wf, newsec, icsstart, icsend):
+    """Update the workfile wf in the interval icsstart - icsend according to newsec.
+
+    It updates only the section of wf that has the same title as newsec. (Or close enough.)
+    The section to update is searched within +/- 3 months of the date interval.
+    Only entries exactly within the date interval are considered.
+    Entries of wf that are not in newsec are discarded.
+    Entries of wf that are missing compared to newsec are added.
+    """
+
     logging.debug("Updating workfile for section :%s", newsec.title)
 
     sec_search_start = icsstart - datetime.timedelta(days=92)
