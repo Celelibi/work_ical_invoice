@@ -415,7 +415,7 @@ def main():
     if not (print_ics or show_diff or write):
         logging.warning("No --print-ics or --show-diff or --write specified. "
                         "Nothing to do, exiting now.")
-        return
+        return 0
 
     logging.info("Reading ics file: %s", icsfilename)
     icswf = ics_to_workfile(icsfilename, rate)
@@ -425,7 +425,7 @@ def main():
 
     if workfilename is None:
         logging.debug("No workfile specified, exiting")
-        return
+        return 0
 
     # Plannings are sent by full weeks, sometimes more than one at a time.
     icsstart = icswf.first_date()
@@ -460,6 +460,8 @@ def main():
                      workfilename, bakworkfile)
         shutil.move(workfilename, bakworkfile)
         shutil.move(newworkfile, workfilename)
+
+    return 0
 
 
 
