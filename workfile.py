@@ -78,6 +78,13 @@ class WorkfileSection:
 
     @property
     def title_comment(self):
+        """Return a WorkfileEntryComment representing the section title.
+
+        Return None if there is no comment at the beginning of the section.
+        Return the section entry itself if there's only one comment entry.
+        Create a new one if there are several.
+        """
+
         n = self._title_comment_count()
 
         if n == 0:
@@ -90,6 +97,8 @@ class WorkfileSection:
 
     @property
     def title(self):
+        """Return the section title as a string."""
+
         c = self.title_comment
         if c is None:
             return None
@@ -97,15 +106,25 @@ class WorkfileSection:
 
     @property
     def full_entries(self):
+        """A view of self.entries where only the full entries are returned."""
+
         return (e for e in self.entries if isinstance(e, WorkfileEntryFull))
 
     def first_date(self):
+        """Returns the earliest date of the section."""
+
         return min((e.date for e in self.full_entries), default=None)
 
     def last_date(self):
+        """Returns the latest date of the section."""
+
         return max((e.date for e in self.full_entries), default=None)
 
     def sort(self):
+        """Sort the entries by date, hours, rate.
+
+        If the section contain comment entries, return UnsortableError.
+        """
         n = self._title_comment_count()
         if not all(isinstance(e, WorkfileEntryFull) for e in self.entries[n:]):
             raise UnsortableError("Can't sort sections with comments")
@@ -123,12 +142,21 @@ class Workfile:
     sections: list
 
     def first_date(self):
+        """Returns the earliest date of the workfile."""
+
         return min((e.date for s in self.sections for e in s.full_entries), default=None)
 
     def last_date(self):
+        """Returns the latest date of the workfile."""
+
         return max((e.date for s in self.sections for e in s.full_entries), default=None)
 
     def filter(self, start, end, title=None):
+        """Filter the workfile according to a date interval and an optional title.
+
+        Returns a WorkfileFiltered.
+        """
+
         return WorkfileFiltered(self, start, end, title)
 
     def __str__(self):
@@ -152,14 +180,21 @@ class WorkfileSectionFiltered:
 
     @property
     def title_comment(self):
+        """The title WorkfileEntryComment of the underlying section."""
+
         return self.section.title_comment
 
     @property
     def title(self):
+        """The title string of the underlying section."""
+
         return self.section.title
 
     @property
     def full_entries(self):
+        """A view of the entries of the underlying section where only the full
+        entries within the date interval are returned."""
+
         ret = []
         for e in self.section.full_entries:
             if e.date < self.end_date and e.date >= self.start_date:
@@ -167,6 +202,11 @@ class WorkfileSectionFiltered:
         return ret
 
     def filter(self, start, end):
+        """Filter the workfile according to a date interval.
+
+        Returns another WorkfileSectionFiltered.
+        """
+
         start = max(start, self.start_date)
         end = min(end, self.end_date)
         return WorkfileSectionFiltered(self.section, start, end)
@@ -196,6 +236,10 @@ class WorkfileFiltered:
 
     @property
     def sections(self):
+        """Filtered view of the sections of the underlying Workfile.
+
+        Only sections that are non-empty after filtering are returned."""
+
         ret = []
         for s in self.workfile.sections:
             sec_first = s.first_date()
@@ -255,6 +299,8 @@ def _read_workfile_section(fp):
 
 
 def read_workfile(workfilename):
+    """Read a workfile and return an instance of Workfile."""
+
     wf = Workfile([])
     state = "workfile"
 
