@@ -102,7 +102,10 @@ class WorkfileSection:
         c = self.title_comment
         if c is None:
             return None
-        return c.comment
+        c = c.comment
+        if c.startswith(" "):
+            c = c[1:]
+        return c
 
     @property
     def full_entries(self):

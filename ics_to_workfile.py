@@ -220,14 +220,14 @@ def update_course(wf, newsec, icsstart, icsend):
     Entries of wf that are missing compared to newsec are added.
     """
 
-    logging.debug("Updating workfile for section :%s", newsec.title)
+    logging.debug("Updating workfile for section : %s", newsec.title)
 
     sec_search_start = icsstart - datetime.timedelta(days=92)
     sec_search_end = icsend + datetime.timedelta(days=92)
     wff = wf.filter(sec_search_start, sec_search_end, newsec.title)
 
     if len(wff.sections) == 0:
-        logging.info("No section found for:%s", newsec.title)
+        logging.info("No section found for: %s", newsec.title)
         logging.info("Doing an approximate search")
 
         wff_notitle = wf.filter(sec_search_start, sec_search_end)
@@ -235,18 +235,18 @@ def update_course(wf, newsec, icsstart, icsend):
         actual_title = approx_match(newsec.title, titles)
 
         if approx_score(newsec.title, actual_title) / len(actual_title) < 0.1:
-            logging.info("Matched with:%s", actual_title)
+            logging.info("Matched with: %s", actual_title)
             wff = wf.filter(sec_search_start, sec_search_end, actual_title)
 
     if len(wff.sections) == 0:
-        logging.info("No section found for:%s", newsec.title)
+        logging.info("No section found for: %s", newsec.title)
         logging.info("Adding it")
         wf.sections.append(newsec)
         return
 
     if len(wff.sections) > 1:
         logging.error("Several sections in the workfile match the date interval: "
-                      "%s to %s with the name%s", sec_search_start, sec_search_end, newsec.title)
+                      "%s to %s with the name %s", sec_search_start, sec_search_end, newsec.title)
         logging.error("Not doing anything about it!")
         return
 
@@ -354,7 +354,7 @@ def update_course(wf, newsec, icsstart, icsend):
     except workfile.UnsortableError as e:
         logging.debug(e.args[0])
     else:
-        logging.debug("Sorted section%s", wfsec.title)
+        logging.debug("Sorted section %s", wfsec.title)
 
 
 
