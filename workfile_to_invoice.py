@@ -7,6 +7,7 @@ import logging
 import logging.config
 import os
 import subprocess
+import shutil
 import sys
 
 import invoice
@@ -78,6 +79,8 @@ def main():
                         help="Fichier LaTeX à mettre à jour")
     parser.add_argument("--show-diff", "-d", action="store_true",
                         help="Afficher les différences prêtes à être appliquées")
+    parser.add_argument("--write", action="store_true",
+                        help="Écrase les factures avec la nouvelle version")
     parser.add_argument("--verbose", "-v", action="count", default=0,
                         help="Augmente le niveau de verbosité")
     parser.add_argument("--quiet", "-q", action="count", default=0,
@@ -90,6 +93,7 @@ def main():
     invoice_dir = args.invoice_dir
     invoice_file = args.invoice_file
     show_diff = args.show_diff
+    write = args.write
     verbose = args.verbose - args.quiet
 
     loglevels = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "NOTSET"]
@@ -98,6 +102,10 @@ def main():
     curlevel = loglevels.index(curlevel)
     verbose = min(len(loglevels) - 1, max(0, curlevel + verbose))
     ch.setLevel(loglevels[verbose])
+
+    if not (show_diff or write):
+        logging.warning("No --show-diff or --write specified. Nothing to do, exiting now.")
+        return 0
 
     if workfilename is None:
         logging.error("No workfile given")
@@ -132,6 +140,20 @@ def main():
 
     if show_diff:
         subprocess.call(["diff", "--color", "--text", "--unified", invoice_file, new_invoice_file])
+
+    if write:
+        res = input("Write these changes? [yN] ")
+        if not res or res not in "yY":
+            logging.info("Not writing the changes. New version still accessible in: %s",
+                         new_invoice_file)
+            write = False
+
+    if write:
+        bak_invoice_file = invoice_file + ".bak"
+        logging.info("Writing changes to %s, old workfile copied to %s",
+                     invoice_file, bak_invoice_file)
+        shutil.move(invoice_file, bak_invoice_file)
+        shutil.move(new_invoice_file, invoice_file)
 
     return 0
 
