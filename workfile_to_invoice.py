@@ -81,6 +81,8 @@ def main():
                         help="Afficher les différences prêtes à être appliquées")
     parser.add_argument("--write", action="store_true",
                         help="Écrase les factures avec la nouvelle version")
+    parser.add_argument("--force", action="store_true",
+                        help="Avec --write, écrit le fichier sans demander de confirmation")
     parser.add_argument("--verbose", "-v", action="count", default=0,
                         help="Augmente le niveau de verbosité")
     parser.add_argument("--quiet", "-q", action="count", default=0,
@@ -94,6 +96,7 @@ def main():
     invoice_file = args.invoice_file
     show_diff = args.show_diff
     write = args.write
+    force = args.force
     verbose = args.verbose - args.quiet
 
     loglevels = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "NOTSET"]
@@ -123,6 +126,13 @@ def main():
         logging.error("Automatic section - invoice matching not supported yet. Use --invoice-file")
         return 1
 
+    if force and not write:
+        logging.info("--force used without --write is ignored")
+
+    if write and not force and not show_diff:
+        logging.debug("--write will ask for confirmation, enabling --show-diff")
+        show_diff = True
+
     wf = workfile.Workfile.fromfile(workfilename)
     sec = find_section(wf, section_title)
 
@@ -141,7 +151,7 @@ def main():
     if show_diff:
         subprocess.call(["diff", "--color", "--text", "--unified", invoice_file, new_invoice_file])
 
-    if write:
+    if write and not force:
         res = input("Write these changes? [yN] ")
         if not res or res not in "yY":
             logging.info("Not writing the changes. New version still accessible in: %s",
