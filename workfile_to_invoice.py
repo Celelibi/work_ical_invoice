@@ -152,15 +152,15 @@ def main():
         logging.error("No workfile given")
         return 1
 
-    if section_title is None:
+    if (show_diff or write) and section_title is None:
         logging.error("Automatic section - invoice matching not supported yet. Use --section-title")
         return 1
 
-    if invoice_dir is None and invoice_file is None:
+    if (show_diff or write) and invoice_dir is None and invoice_file is None:
         logging.error("No invoice dir or invoice file given")
         return 1
 
-    if invoice_file is None:
+    if (show_diff or write) and invoice_file is None:
         logging.error("Automatic section - invoice matching not supported yet. Use --invoice-file")
         return 1
 
