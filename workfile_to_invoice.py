@@ -35,6 +35,8 @@ def logging_getHandler(name):
 
 
 def find_section(wf, title):
+    """Find the Workfile section with the given title."""
+
     date_start = datetime.date.today() - datetime.timedelta(days=91)
     date_end = datetime.date.today() + datetime.timedelta(days=30)
     wff = wf.filter(date_start, date_end, title)
@@ -52,6 +54,8 @@ def find_section(wf, title):
 
 
 def update_invoice(inv, sec):
+    """Update an Invoice object to have all the items related to the Workfile section."""
+
     newitems = []
     for e in sec.full_entries:
         newitems.append(invoice.InvoiceItem(sec.title, e.date, e.hours, "heures", e.rate, 0))
@@ -63,6 +67,8 @@ def update_invoice(inv, sec):
 
 
 def update_invoice_file(invoice_file, sec, show_diff=False, write=False, force=False):
+    """Update an invoice file according to the entries in a given Workfile section."""
+
     try:
         inv = invoice.Invoice.fromfile(invoice_file)
     except FileNotFoundError:
