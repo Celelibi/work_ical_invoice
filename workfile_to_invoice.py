@@ -62,6 +62,38 @@ def update_invoice(inv, sec):
 
 
 
+def update_invoice_file(invoice_file, sec, show_diff=False, write=False, force=False):
+    try:
+        inv = invoice.Invoice.fromfile(invoice_file)
+    except FileNotFoundError:
+        logging.error("Creating non-existing invoice file not supported yet")
+        raise
+
+    update_invoice(inv, sec)
+
+    new_invoice_file = invoice_file + ".new"
+    with open(new_invoice_file, "w") as fp:
+        fp.write(str(inv))
+
+    if show_diff:
+        subprocess.call(["diff", "--color", "--text", "--unified", invoice_file, new_invoice_file])
+
+    if write and not force:
+        res = input("Write these changes? [yN] ")
+        if not res or res not in "yY":
+            logging.info("Not writing the changes. New version still accessible in: %s",
+                         new_invoice_file)
+            write = False
+
+    if write:
+        bak_invoice_file = invoice_file + ".bak"
+        logging.info("Writing changes to %s, old workfile copied to %s",
+                     invoice_file, bak_invoice_file)
+        shutil.move(invoice_file, bak_invoice_file)
+        shutil.move(new_invoice_file, invoice_file)
+
+
+
 def main():
     locale.setlocale(locale.LC_ALL, '')
     logging.config.fileConfig(os.path.join(SELFPATH, "logconf.ini"),
@@ -135,35 +167,7 @@ def main():
 
     wf = workfile.Workfile.fromfile(workfilename)
     sec = find_section(wf, section_title)
-
-    try:
-        inv = invoice.Invoice.fromfile(invoice_file)
-    except FileNotFoundError:
-        logging.error("Creating non-existing invoice file not supported yet")
-        raise
-
-    update_invoice(inv, sec)
-
-    new_invoice_file = invoice_file + ".new"
-    with open(new_invoice_file, "w") as fp:
-        fp.write(str(inv))
-
-    if show_diff:
-        subprocess.call(["diff", "--color", "--text", "--unified", invoice_file, new_invoice_file])
-
-    if write and not force:
-        res = input("Write these changes? [yN] ")
-        if not res or res not in "yY":
-            logging.info("Not writing the changes. New version still accessible in: %s",
-                         new_invoice_file)
-            write = False
-
-    if write:
-        bak_invoice_file = invoice_file + ".bak"
-        logging.info("Writing changes to %s, old workfile copied to %s",
-                     invoice_file, bak_invoice_file)
-        shutil.move(invoice_file, bak_invoice_file)
-        shutil.move(new_invoice_file, invoice_file)
+    update_invoice_file(invoice_file, sec, show_diff, write, force)
 
     return 0
 
