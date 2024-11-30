@@ -34,16 +34,22 @@ def logging_getHandler(name):
 
 
 
-def find_section(wf, title):
-    """Find the Workfile section with the given title."""
+def filter_sections(wf, title=None):
+    """Find the recent Workfile sections with the given title."""
 
     date_start = datetime.date.today() - datetime.timedelta(days=91)
     date_end = datetime.date.today() + datetime.timedelta(days=30)
-    wff = wf.filter(date_start, date_end, title)
+    return wf.filter(date_start, date_end, title)
 
+
+
+def find_section(wf, title):
+    """Find the Workfile section for the given title."""
+
+    wff = filter_sections(wf, title)
     if len(wff.sections) == 0:
         # Approximate match not supported yet
-        raise SectionNameError(f"No section titled {title!r} between {date_start} and {date_end}")
+        raise SectionNameError(f"No section titled {title!r} between {wff.start_date} and {wff.end_date}")
 
     if len(wff.sections) > 1:
         logging.warning("%d sections with name %r have been found. Using the last one.",
