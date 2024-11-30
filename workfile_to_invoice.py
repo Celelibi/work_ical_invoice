@@ -121,7 +121,10 @@ def main():
         raise
 
     update_invoice(inv, sec)
-    print(inv)
+
+    new_invoice_file = invoice_file + ".new"
+    with open(new_invoice_file, "w") as fp:
+        fp.write(str(inv))
 
     return 0
 
