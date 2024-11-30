@@ -6,6 +6,7 @@ import locale
 import logging
 import logging.config
 import os
+import subprocess
 import sys
 
 import invoice
@@ -75,6 +76,8 @@ def main():
                         help="Répertoire contenant les fichiers LaTeX des factures")
     parser.add_argument("--invoice-file", "-f",
                         help="Fichier LaTeX à mettre à jour")
+    parser.add_argument("--show-diff", "-d", action="store_true",
+                        help="Afficher les différences prêtes à être appliquées")
     parser.add_argument("--verbose", "-v", action="count", default=0,
                         help="Augmente le niveau de verbosité")
     parser.add_argument("--quiet", "-q", action="count", default=0,
@@ -86,6 +89,7 @@ def main():
     section_title = args.section_title
     invoice_dir = args.invoice_dir
     invoice_file = args.invoice_file
+    show_diff = args.show_diff
     verbose = args.verbose - args.quiet
 
     loglevels = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "NOTSET"]
@@ -125,6 +129,9 @@ def main():
     new_invoice_file = invoice_file + ".new"
     with open(new_invoice_file, "w") as fp:
         fp.write(str(inv))
+
+    if show_diff:
+        subprocess.call(["diff", "--color", "--text", "--unified", invoice_file, new_invoice_file])
 
     return 0
 
