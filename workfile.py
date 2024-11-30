@@ -159,6 +159,58 @@ class Workfile:
 
         return WorkfileFiltered(self, start, end, title)
 
+    @staticmethod
+    def _read_section(fp):
+        fp = more_itertools.peekable(fp)
+
+        entries = []
+        for line in fp:
+            if line.endswith("\n"):
+                line = line[:-1]
+
+            if line == "":
+                break
+
+            if line.startswith("#"):
+                entries.append(WorkfileEntryComment(line[1:]))
+                continue
+
+            date, hours, rate, *linecomm = line.split(" ", maxsplit=3)
+            date = datetime.date.fromisoformat(date)
+            hours = decimal.Decimal(hours)
+            rate = decimal.Decimal(rate)
+            if linecomm:
+                linecomm = linecomm[0]
+                assert "#" in linecomm
+                commidx = linecomm.index("#")
+                prespaces = linecomm.count(" ", 0, commidx) + 1
+                linecomm = linecomm[commidx + 1:]
+            else:
+                prespaces = None
+                linecomm = None
+
+            entries.append(WorkfileEntryFull(date, hours, rate, linecomm, prespaces))
+
+        if not entries:
+            raise StopIteration
+
+        return WorkfileSection(entries)
+
+    @classmethod
+    def fromfile(cls, workfilename):
+        """Read a workfile and return an instance of Workfile."""
+
+        wf = cls([])
+
+        with open(workfilename) as fp:
+            while True:
+                try:
+                    wf.sections.append(cls._read_section(fp))
+                except StopIteration:
+                    break
+
+        return wf
+
     def __str__(self):
         return "\n\n".join(str(s) for s in self.sections)
 
@@ -257,57 +309,3 @@ class WorkfileFiltered:
 
     def __str__(self):
         return "\n\n".join(str(s) for s in self.sections)
-
-
-
-def _read_workfile_section(fp):
-    fp = more_itertools.peekable(fp)
-
-    entries = []
-    for line in fp:
-        if line.endswith("\n"):
-            line = line[:-1]
-
-        if line == "":
-            break
-
-        if line.startswith("#"):
-            entries.append(WorkfileEntryComment(line[1:]))
-            continue
-
-        date, hours, rate, *linecomm = line.split(" ", maxsplit=3)
-        date = datetime.date.fromisoformat(date)
-        hours = decimal.Decimal(hours)
-        rate = decimal.Decimal(rate)
-        if linecomm:
-            linecomm = linecomm[0]
-            assert "#" in linecomm
-            commidx = linecomm.index("#")
-            prespaces = linecomm.count(" ", 0, commidx) + 1
-            linecomm = linecomm[commidx + 1:]
-        else:
-            prespaces = None
-            linecomm = None
-
-        entries.append(WorkfileEntryFull(date, hours, rate, linecomm, prespaces))
-
-    if not entries:
-        raise StopIteration
-
-    return WorkfileSection(entries)
-
-
-
-def read_workfile(workfilename):
-    """Read a workfile and return an instance of Workfile."""
-
-    wf = Workfile([])
-
-    with open(workfilename) as fp:
-        while True:
-            try:
-                wf.sections.append(_read_workfile_section(fp))
-            except StopIteration:
-                break
-
-    return wf

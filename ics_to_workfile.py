@@ -434,7 +434,7 @@ def main():
     icsend += datetime.timedelta(days=7 - icsend.weekday())
 
     logging.info("Reading workfile %s", workfilename)
-    wf = workfile.read_workfile(workfilename)
+    wf = workfile.Workfile.fromfile(workfilename)
     for sec in icswf.sections:
         update_course(wf, sec, icsstart, icsend)
 
