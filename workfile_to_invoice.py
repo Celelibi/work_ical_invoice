@@ -43,8 +43,15 @@ def filter_sections(wf, title=None):
 
 
 
+def list_titles_dates(wf):
+    for sec in filter_sections(wf).sections:
+        s = sec.section
+        print(f"{s.first_date()} - {s.last_date()}: {s.title}")
+
+
+
 def find_section(wf, title):
-    """Find the Workfile section for the given title."""
+    """Find the Workfile section with the given title."""
 
     wff = filter_sections(wf, title)
     if len(wff.sections) == 0:
@@ -115,6 +122,8 @@ def main():
                                      "factures à partir d'un Workfile")
     parser.add_argument("--workfile", "-w",
                         help="Fichier Workfile à utiliser")
+    parser.add_argument("--list-sections", "-l", action="store_true",
+                        help="Liste les sections récentes du Workfile disponibles pour --section-name")
     parser.add_argument("--section-title", "-s",
                         help="Section dont générer ou mettre à jour la facture")
     parser.add_argument("--invoice-dir", "-i",
@@ -135,6 +144,7 @@ def main():
     args = parser.parse_args()
 
     workfilename = args.workfile
+    list_sections = args.list_sections
     section_title = args.section_title
     invoice_dir = args.invoice_dir
     invoice_file = args.invoice_file
@@ -150,8 +160,9 @@ def main():
     verbose = min(len(loglevels) - 1, max(0, curlevel + verbose))
     ch.setLevel(loglevels[verbose])
 
-    if not (show_diff or write):
-        logging.warning("No --show-diff or --write specified. Nothing to do, exiting now.")
+    if not (show_diff or write or list_sections):
+        logging.warning("No --show-diff or --write or --list-sections specified. " \
+                        "Nothing to do, exiting now.")
         return 0
 
     if workfilename is None:
@@ -178,6 +189,13 @@ def main():
         show_diff = True
 
     wf = workfile.Workfile.fromfile(workfilename)
+
+    if list_sections:
+        list_titles_dates(wf)
+
+        if not (show_diff or write):
+            return 0
+
     sec = find_section(wf, section_title)
     update_invoice_file(invoice_file, sec, show_diff, write, force)
 
