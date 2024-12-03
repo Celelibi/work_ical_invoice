@@ -79,14 +79,13 @@ def update_invoice(inv, sec):
 
 
 
-def update_invoice_file(invoice_file, sec, show_diff=False, write=False, force=False):
+def update_invoice_file(invoice_file, sec, show_diff=False, write=False, force=False, template=None):
     """Update an invoice file according to the entries in a given Workfile section."""
 
-    try:
+    if template is not None:
+        inv = invoice.Invoice.fromfile(template)
+    else:
         inv = invoice.Invoice.fromfile(invoice_file)
-    except FileNotFoundError:
-        logging.error("Creating non-existing invoice file not supported yet")
-        raise
 
     update_invoice(inv, sec)
 
@@ -95,7 +94,8 @@ def update_invoice_file(invoice_file, sec, show_diff=False, write=False, force=F
         fp.write(str(inv))
 
     if show_diff:
-        subprocess.call(["diff", "--color", "--text", "--unified", invoice_file, new_invoice_file])
+        subprocess.call(["diff", "--color", "--new-file", "--text", "--unified",
+                         invoice_file, new_invoice_file])
 
     if write and not force:
         res = input("Write these changes? [yN] ")
@@ -108,7 +108,11 @@ def update_invoice_file(invoice_file, sec, show_diff=False, write=False, force=F
         bak_invoice_file = invoice_file + ".bak"
         logging.info("Writing changes to %s, old workfile copied to %s",
                      invoice_file, bak_invoice_file)
-        shutil.move(invoice_file, bak_invoice_file)
+        try:
+            shutil.move(invoice_file, bak_invoice_file)
+        except FileNotFoundError as e:
+            if e.filename != invoice_file:
+                raise
         shutil.move(new_invoice_file, invoice_file)
 
 
@@ -129,7 +133,9 @@ def main():
     parser.add_argument("--invoice-dir", "-i",
                         help="Répertoire contenant les fichiers LaTeX des factures")
     parser.add_argument("--invoice-file", "-f",
-                        help="Fichier LaTeX à mettre à jour")
+                        help="Fichier LaTeX à mettre à jour ou à écrire")
+    parser.add_argument("--template", "-t",
+                        help="Fichier LaTeX à mettre à jour à copier")
     parser.add_argument("--show-diff", "-d", action="store_true",
                         help="Afficher les différences prêtes à être appliquées")
     parser.add_argument("--write", action="store_true",
@@ -148,6 +154,7 @@ def main():
     section_title = args.section_title
     invoice_dir = args.invoice_dir
     invoice_file = args.invoice_file
+    template = args.template
     show_diff = args.show_diff
     write = args.write
     force = args.force
@@ -197,7 +204,7 @@ def main():
             return 0
 
     sec = find_section(wf, section_title)
-    update_invoice_file(invoice_file, sec, show_diff, write, force)
+    update_invoice_file(invoice_file, sec, show_diff, write, force, template)
 
     return 0
 
