@@ -97,6 +97,9 @@ def update_invoice_file(invoice_file, sec, show_diff=False, write=False, force=F
         subprocess.call(["diff", "--color", "--new-file", "--text", "--unified",
                          invoice_file, new_invoice_file])
 
+    if not write:
+        os.unlink(new_invoice_file)
+
     if write and not force:
         res = input("Write these changes? [yN] ")
         if not res or res not in "yY":
