@@ -248,6 +248,23 @@ def _update_course_ignore_rate_nonmatch(added_entries, removed_entries):
 
 
 
+def _update_course_warn_date_only_match(added_entries, removed_entries):
+    """Warn about date-only match, but perform them anyway."""
+
+    for added_entry in added_entries.elements():
+        datematch, _, _ = partial_entry_matches(added_entry, removed_entries)
+
+        if len(datematch) > 0:
+            logging.warning("Found matches for date but hours and rate don't match: %s",
+                            added_entry)
+            for e in datematch:
+                logging.warning("Non-match: %s", e)
+            logging.warning("Replacing with entry: %s", added_entry)
+
+    return added_entries, removed_entries
+
+
+
 def update_course(wf, newsec, icsstart, icsend):
     """Update the workfile wf in the interval icsstart - icsend according to newsec.
 
@@ -304,17 +321,7 @@ def update_course(wf, newsec, icsstart, icsend):
     added_entries, removed_entries = _update_course_ignore_sum_match(added_entries, removed_entries)
     added_entries, removed_entries = _update_course_fix_partial(added_entries, removed_entries, wfsec)
     added_entries, removed_entries = _update_course_ignore_rate_nonmatch(added_entries, removed_entries)
-
-    # Warn about date-only match, but perform them anyway.
-    for added_entry in added_entries.elements():
-        datematch, _, _ = partial_entry_matches(added_entry, removed_entries)
-
-        if len(datematch) > 0:
-            logging.warning("Found matches for date but hours and rate don't match: %s",
-                            added_entry)
-            for e in datematch:
-                logging.warning("Non-match: %s", e)
-            logging.warning("Replacing with entry: %s", added_entry)
+    added_entries, removed_entries = _update_course_warn_date_only_match(added_entries, removed_entries)
 
     # Add new entries
     for added_entry in added_entries.elements():
