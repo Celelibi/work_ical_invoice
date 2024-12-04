@@ -168,6 +168,26 @@ def partial_entry_matches(entry, entries):
 
 
 
+def _update_course_approx_title_match(wf, title, start, end):
+    wff = wf.filter(start, end, title)
+    if len(wff.sections) != 0:
+        return wff
+
+    logging.info("No section found for: %s", title)
+    logging.info("Doing an approximate search")
+
+    wff_notitle = wf.filter(start, end)
+    titles = [s.title for s in wff_notitle.sections]
+    actual_title = approxmatch.approx_match(title, titles)
+
+    if approxmatch.approx_score(title, actual_title) / len(actual_title) < 0.1:
+        logging.info("Matched with: %s", actual_title)
+        wff = wf.filter(start, end, actual_title)
+
+    return wff
+
+
+
 def _update_course_ignore_sum_match(added_entries, removed_entries):
     """If an entry already match a sum of existing entries, match them."""
 
@@ -294,19 +314,7 @@ def update_course(wf, newsec, icsstart, icsend):
 
     sec_search_start = icsstart - datetime.timedelta(days=92)
     sec_search_end = icsend + datetime.timedelta(days=92)
-    wff = wf.filter(sec_search_start, sec_search_end, newsec.title)
-
-    if len(wff.sections) == 0:
-        logging.info("No section found for: %s", newsec.title)
-        logging.info("Doing an approximate search")
-
-        wff_notitle = wf.filter(sec_search_start, sec_search_end)
-        titles = [s.title for s in wff_notitle.sections]
-        actual_title = approxmatch.approx_match(newsec.title, titles)
-
-        if approxmatch.approx_score(newsec.title, actual_title) / len(actual_title) < 0.1:
-            logging.info("Matched with: %s", actual_title)
-            wff = wf.filter(sec_search_start, sec_search_end, actual_title)
+    wff = _update_course_approx_title_match(wf, newsec.title, sec_search_start, sec_search_end)
 
     if len(wff.sections) == 0:
         logging.info("No section found for: %s", newsec.title)
