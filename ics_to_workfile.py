@@ -186,6 +186,49 @@ def _update_course_ignore_sum_match(added_entries, removed_entries):
 
 
 
+def _update_course_fix_partial(added_entries, removed_entries, wfsec):
+    """If there are entries matching the date and rate, fix the entry if there's
+    only one or add a new one if there are already several."""
+
+    for added_entry in added_entries.elements():
+        _, _, dateratematch = partial_entry_matches(added_entry, removed_entries)
+        dateratematch_hours = sum(e.hours for e in dateratematch)
+
+        if len(dateratematch) == 1:
+            logging.debug("Fixing in-place a partial (date, rate) match for: %s", added_entry)
+            logging.warning("Partial-match: %s", dateratematch[0])
+
+            removed_entries[dateratematch[0]] -= 1
+            added_entries[added_entry] -= 1
+
+            # Modify the existing entry in order to keep the comment / formatting / ordering.
+            idx = wfsec.entries.index(dateratematch[0])
+            wfsec.entries[idx].hours = added_entry.hours
+
+        elif len(dateratematch) > 1 and dateratematch_hours < added_entry.hours:
+            logging.debug("Found partial matches that don't add up to the amount "
+                          "of hours for: %s", added_entry)
+            for e in dateratematch:
+                logging.debug("Partial-match: %s", e)
+                removed_entries[e] -= 1
+            remhours = added_entry.hours - dateratematch_hours
+            logging.info("Adding new entry with remaining hours: %f", remhours)
+
+            # Apply immediately to avoid further matching.
+            added_entries[added_entry] -= 1
+            added_entry.hours = remhours
+            wfsec.entries.append(added_entry)
+
+        elif len(dateratematch) > 1 and dateratematch_hours > added_entry.hours:
+            # Too many hours? Let it go to a remove and add
+            logging.debug("Too many hours (%s) for: %s", dateratematch_hours, added_entry)
+            for e in dateratematch:
+                logging.debug("Entry counting toward the overtime: %s", e)
+
+    return added_entries, removed_entries
+
+
+
 def update_course(wf, newsec, icsstart, icsend):
     """Update the workfile wf in the interval icsstart - icsend according to newsec.
 
@@ -240,43 +283,7 @@ def update_course(wf, newsec, icsstart, icsend):
 
     # Keep filtering the added entires to remove non-exact matches
     added_entries, removed_entries = _update_course_ignore_sum_match(added_entries, removed_entries)
-
-    # If there are entries matching the date and rate, fix the entry if there's
-    # only one or add a new one if there are already several.
-    for added_entry in added_entries.elements():
-        _, _, dateratematch = partial_entry_matches(added_entry, removed_entries)
-        dateratematch_hours = sum(e.hours for e in dateratematch)
-
-        if len(dateratematch) == 1:
-            logging.debug("Fixing in-place a partial (date, rate) match for: %s", added_entry)
-            logging.warning("Partial-match: %s", dateratematch[0])
-
-            removed_entries[dateratematch[0]] -= 1
-            added_entries[added_entry] -= 1
-
-            # Modify the existing entry in order to keep the comment / formatting / ordering.
-            idx = wfsec.entries.index(dateratematch[0])
-            wfsec.entries[idx].hours = added_entry.hours
-
-        elif len(dateratematch) > 1 and dateratematch_hours < added_entry.hours:
-            logging.debug("Found partial matches that don't add up to the amount "
-                          "of hours for: %s", added_entry)
-            for e in dateratematch:
-                logging.debug("Partial-match: %s", e)
-                removed_entries[e] -= 1
-            remhours = added_entry.hours - dateratematch_hours
-            logging.info("Adding new entry with remaining hours: %f", remhours)
-
-            # Apply immediately to avoid further matching.
-            added_entries[added_entry] -= 1
-            added_entry.hours = remhours
-            wfsec.entries.append(added_entry)
-
-        elif len(dateratematch) > 1 and dateratematch_hours > added_entry.hours:
-            # Too many hours? Let it go to a remove and add
-            logging.debug("Too many hours (%s) for: %s", dateratematch_hours, added_entry)
-            for e in dateratematch:
-                logging.debug("Entry counting toward the overtime: %s", e)
+    added_entries, removed_entries = _update_course_fix_partial(added_entries, removed_entries, wfsec)
 
     # Louldly ignore partial matches that don't match the rate. This is common
     # since the hourly rate isn't in the ics file.
