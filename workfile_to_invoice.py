@@ -44,12 +44,22 @@ def filter_sections(wf, title=None):
 
 
 
-def list_titles_dates(wf):
+def list_titles_dates(wf, title=None):
+    """List the section titles with the date range of the entries. If a title
+    is given, show also the matching score."""
+
     sections = filter_sections(wf).sections
+    if title is not None:
+        scores = {s.title: approxmatch.approx_score(title, s.title) for s in sections}
+        sections = sorted(sections, key=lambda s: scores[s.title])
 
     for sec in sections:
         s = sec.section
-        print(f"{s.first_date()} - {s.last_date()}: {s.title}")
+        if title is None:
+            print(f"{s.first_date()} - {s.last_date()}: {s.title}")
+        else:
+            score = scores[s.title]
+            print(f"{s.first_date()} - {s.last_date()}: score {score:2d}: {s.title}")
 
 
 
@@ -217,7 +227,7 @@ def main():
     wf = workfile.Workfile.fromfile(workfilename)
 
     if list_sections:
-        list_titles_dates(wf)
+        list_titles_dates(wf, section_title)
 
         if not (show_diff or write):
             return 0
