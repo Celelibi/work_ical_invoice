@@ -362,6 +362,16 @@ def update_course(wf, newsec, icsstart, icsend):
 
 
 def do_stuff(args):
+    """Does the stuff of this program.
+
+    Including:
+        - Print the ICS
+        - Load the Workfile
+        - Update the sections of the Workfile based on the ICS
+        - Show the difference between old and new Workfile
+        - Ask for confirmation before saving it
+    """
+
     logging.info("Reading ics file: %s", args.ics)
     icswf = ics_to_workfile(args.ics, args.rate)
 
@@ -412,6 +422,9 @@ def do_stuff(args):
 
 
 def main():
+    """Main function. Parse the arguments, set the logging level, perform some
+    sanity checks and pass the control to do_stuff."""
+
     locale.setlocale(locale.LC_ALL, '')
     logging.config.fileConfig(os.path.join(SELFPATH, "logconf.ini"),
                               disable_existing_loggers=False)
