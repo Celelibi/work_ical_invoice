@@ -45,7 +45,9 @@ def filter_sections(wf, title=None):
 
 
 def list_titles_dates(wf):
-    for sec in filter_sections(wf).sections:
+    sections = filter_sections(wf).sections
+
+    for sec in sections:
         s = sec.section
         print(f"{s.first_date()} - {s.last_date()}: {s.title}")
 
