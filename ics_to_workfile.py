@@ -168,7 +168,7 @@ def partial_entry_matches(entry, entries):
 
 
 
-def _update_course_approx_title_match(wf, title, start, end):
+def _update_section_approx_title_match(wf, title, start, end):
     wff = wf.filter(start, end, title)
     if len(wff.sections) != 0:
         return wff
@@ -188,7 +188,7 @@ def _update_course_approx_title_match(wf, title, start, end):
 
 
 
-def _update_course_ignore_sum_match(added_entries, removed_entries):
+def _update_section_ignore_sum_match(added_entries, removed_entries):
     """If an entry already match a sum of existing entries, match them."""
 
     for added_entry in added_entries.elements():
@@ -206,7 +206,7 @@ def _update_course_ignore_sum_match(added_entries, removed_entries):
 
 
 
-def _update_course_fix_partial(added_entries, removed_entries, wfsec):
+def _update_section_fix_partial(added_entries, removed_entries, wfsec):
     """If there are entries matching the date and rate, fix the entry if there's
     only one or add a new one if there are already several."""
 
@@ -249,7 +249,7 @@ def _update_course_fix_partial(added_entries, removed_entries, wfsec):
 
 
 
-def _update_course_ignore_rate_nonmatch(added_entries, removed_entries):
+def _update_section_ignore_rate_nonmatch(added_entries, removed_entries):
     """Louldly ignore partial matches that don't match the rate. This is common
     since the hourly rate isn't in the ics file."""
 
@@ -268,7 +268,7 @@ def _update_course_ignore_rate_nonmatch(added_entries, removed_entries):
 
 
 
-def _update_course_warn_date_only_match(added_entries, removed_entries):
+def _update_section_warn_date_only_match(added_entries, removed_entries):
     """Warn about date-only match, but perform them anyway."""
 
     for added_entry in added_entries.elements():
@@ -285,7 +285,7 @@ def _update_course_warn_date_only_match(added_entries, removed_entries):
 
 
 
-def _update_course_apply_changes(wfsec, added_entries, removed_entries):
+def _update_section_apply_changes(wfsec, added_entries, removed_entries):
     """Add and remove entries to a Workfile section."""
 
     # Add new entries
@@ -300,7 +300,7 @@ def _update_course_apply_changes(wfsec, added_entries, removed_entries):
 
 
 
-def update_course(wf, newsec, icsstart, icsend):
+def update_section(wf, newsec, icsstart, icsend):
     """Update the workfile wf in the interval icsstart - icsend according to newsec.
 
     It updates only the section of wf that has the same title as newsec. (Or close enough.)
@@ -314,7 +314,7 @@ def update_course(wf, newsec, icsstart, icsend):
 
     sec_search_start = icsstart - datetime.timedelta(days=92)
     sec_search_end = icsend + datetime.timedelta(days=92)
-    wff = _update_course_approx_title_match(wf, newsec.title, sec_search_start, sec_search_end)
+    wff = _update_section_approx_title_match(wf, newsec.title, sec_search_start, sec_search_end)
 
     if len(wff.sections) == 0:
         logging.info("No section found for: %s", newsec.title)
@@ -341,12 +341,12 @@ def update_course(wf, newsec, icsstart, icsend):
         logging.debug("Ignoring a match: %s", e)
 
     # Keep filtering the added entires to remove non-exact matches
-    added, removed = _update_course_ignore_sum_match(added, removed)
-    added, removed = _update_course_fix_partial(added, removed, wfsec)
-    added, removed = _update_course_ignore_rate_nonmatch(added, removed)
-    added, removed = _update_course_warn_date_only_match(added, removed)
+    added, removed = _update_section_ignore_sum_match(added, removed)
+    added, removed = _update_section_fix_partial(added, removed, wfsec)
+    added, removed = _update_section_ignore_rate_nonmatch(added, removed)
+    added, removed = _update_section_warn_date_only_match(added, removed)
 
-    wfsec = _update_course_apply_changes(wfsec, added, removed)
+    wfsec = _update_section_apply_changes(wfsec, added, removed)
 
     if not added and not removed:
         logging.debug("Not trying to sort an untouched section")
@@ -392,7 +392,7 @@ def do_stuff(args):
     logging.info("Reading workfile %s", workfilename)
     wf = workfile.Workfile.fromfile(workfilename)
     for sec in icswf.sections:
-        update_course(wf, sec, icsstart, icsend)
+        update_section(wf, sec, icsstart, icsend)
 
     newworkfile = workfilename + ".new"
     with open(newworkfile, "w") as fp:
