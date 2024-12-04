@@ -128,11 +128,9 @@ def ics_to_workfile(ics, rate):
 
     bycoursedate = structure_by_date(cal)
     for (course, students), bydate in bycoursedate.items():
+        sectitle_comment = f" {course}"
         if students:
-            students = students.removeprefix("Groupe d'étudiants : ")
-            sectitle_comment = f" {course} avec {students}"
-        else:
-            sectitle_comment = f" {course}"
+            sectitle_comment += " avec " + students.removeprefix("Groupe d'étudiants : ")
 
         sec = workfile.WorkfileSection([workfile.WorkfileEntryComment(sectitle_comment)])
         for date, evs in bydate.items():
