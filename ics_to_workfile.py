@@ -326,21 +326,21 @@ def update_course(wf, newsec, icsstart, icsend):
     newsec_entries = collections.Counter(newsec.full_entries)
     current_entries = collections.Counter(wffsec.full_entries)
 
-    added_entries = newsec_entries - current_entries
-    removed_entries = current_entries - newsec_entries
+    added = newsec_entries - current_entries
+    removed = current_entries - newsec_entries
 
     for e in newsec_entries & current_entries:
         logging.debug("Ignoring a match: %s", e)
 
     # Keep filtering the added entires to remove non-exact matches
-    added_entries, removed_entries = _update_course_ignore_sum_match(added_entries, removed_entries)
-    added_entries, removed_entries = _update_course_fix_partial(added_entries, removed_entries, wfsec)
-    added_entries, removed_entries = _update_course_ignore_rate_nonmatch(added_entries, removed_entries)
-    added_entries, removed_entries = _update_course_warn_date_only_match(added_entries, removed_entries)
+    added, removed = _update_course_ignore_sum_match(added, removed)
+    added, removed = _update_course_fix_partial(added, removed, wfsec)
+    added, removed = _update_course_ignore_rate_nonmatch(added, removed)
+    added, removed = _update_course_warn_date_only_match(added, removed)
 
-    wfsec = _update_course_apply_changes(wfsec, added_entries, removed_entries)
+    wfsec = _update_course_apply_changes(wfsec, added, removed)
 
-    if not added_entries and not removed_entries:
+    if not added and not removed:
         logging.debug("Not trying to sort an untouched section")
         return
 
