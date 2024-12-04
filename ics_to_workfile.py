@@ -13,6 +13,8 @@ import shutil
 import sys
 
 import icalendar
+
+import approxmatch
 import workfile
 
 
@@ -145,46 +147,6 @@ def ics_to_workfile(ics, rate):
 
 
 
-def levenshtein(s1, s2):
-    """Levenshtein distance between two strings."""
-
-    prevrow = list(range(len(s2) + 1))
-
-    for i1, c1 in enumerate(s1, 1):
-        row = [i1]
-        for i2, c2 in enumerate(s2, 1):
-            matchscore = 0 if c1 == c2 else 2
-            row.append(min(row[-1] + 1, prevrow[i2] + 1, prevrow[i2 - 1] + matchscore))
-        prevrow = row
-
-    return prevrow[-1]
-
-
-
-def approx_score(s1, s2):
-    """Score of "likeness" of two strings.
-
-    This scoring function tries to use a bag-of-word model where the order of
-    the words doesn't matter.
-    For each word of the first string, it finds the best match among the words
-    of the second string.
-    The final score is the sum of all the best-match scores.
-    """
-
-    l1 = s1.lower().split()
-    l2 = s2.lower().split()
-    return sum(min(levenshtein(w1, w2) for w2 in l2) for w1 in l1)
-
-
-
-def approx_match(nail, haystack):
-    """This function looks for a nail (not quite a needle) in a haystack. It
-    returns the matching needle."""
-
-    return min(haystack, key=lambda hay: approx_score(nail, hay))
-
-
-
 def partial_entry_matches(entry, entries):
     """Finds partial matches between one workfile entry and a list of entries.
 
@@ -232,9 +194,9 @@ def update_course(wf, newsec, icsstart, icsend):
 
         wff_notitle = wf.filter(sec_search_start, sec_search_end)
         titles = [s.title for s in wff_notitle.sections]
-        actual_title = approx_match(newsec.title, titles)
+        actual_title = approxmatch.approx_match(newsec.title, titles)
 
-        if approx_score(newsec.title, actual_title) / len(actual_title) < 0.1:
+        if approxmatch.approx_score(newsec.title, actual_title) / len(actual_title) < 0.1:
             logging.info("Matched with: %s", actual_title)
             wff = wf.filter(sec_search_start, sec_search_end, actual_title)
 
