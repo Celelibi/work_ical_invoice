@@ -361,14 +361,14 @@ def update_course(wf, newsec, icsstart, icsend):
 
 
 
-def do_stuff(icsfilename, rate, workfilename, print_ics, show_diff, write, force):
-    logging.info("Reading ics file: %s", icsfilename)
-    icswf = ics_to_workfile(icsfilename, rate)
+def do_stuff(args):
+    logging.info("Reading ics file: %s", args.ics)
+    icswf = ics_to_workfile(args.ics, args.rate)
 
-    if print_ics:
+    if args.print_ics:
         print(icswf)
 
-    if workfilename is None:
+    if args.workfile is None:
         logging.debug("No workfile specified, exiting")
         return 0
 
@@ -378,6 +378,7 @@ def do_stuff(icsfilename, rate, workfilename, print_ics, show_diff, write, force
     icsstart -= datetime.timedelta(days=icsstart.weekday())
     icsend += datetime.timedelta(days=7 - icsend.weekday())
 
+    workfilename = args.workfile
     logging.info("Reading workfile %s", workfilename)
     wf = workfile.Workfile.fromfile(workfilename)
     for sec in icswf.sections:
@@ -388,18 +389,18 @@ def do_stuff(icsfilename, rate, workfilename, print_ics, show_diff, write, force
         print(wf, file=fp)
         print("", file=fp)
 
-    if show_diff:
+    if args.show_diff:
         subprocess.call(["diff", "--color", "--text", "--unified", "--show-function-line=^#",
                          workfilename, newworkfile])
 
-    if write and not force:
+    if args.write and not args.force:
         res = input("Write these changes? [yN] ")
         if not res or res not in "yY":
             logging.info("Not writing the changes. New version still accessible in: %s",
                          newworkfile)
-            write = False
+            args.write = False
 
-    if write:
+    if args.write:
         bakworkfile = workfilename + ".bak"
         logging.info("Writing changes to %s, old workfile copied to %s",
                      workfilename, bakworkfile)
@@ -435,14 +436,6 @@ def main():
                         help="Diminue le niveau de verbosité")
 
     args = parser.parse_args()
-
-    icsfilename = args.ics
-    rate = args.rate
-    workfilename = args.workfile
-    print_ics = args.print_ics
-    show_diff = args.show_diff
-    write = args.write
-    force = args.force
     verbose = args.verbose - args.quiet
 
     loglevels = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "NOTSET"]
@@ -452,23 +445,23 @@ def main():
     verbose = min(len(loglevels) - 1, max(0, curlevel + verbose))
     ch.setLevel(loglevels[verbose])
 
-    if workfilename is None and (show_diff or write):
+    if args.workfile is None and (args.show_diff or args.write):
         logging.critical("No workfile specified")
         return 1
 
-    if force and not write:
+    if args.force and not args.write:
         logging.info("--force used without --write is ignored")
 
-    if write and not force and not show_diff:
+    if args.write and not args.force and not args.show_diff:
         logging.debug("--write will ask for confirmation, enabling --show-diff")
-        show_diff = True
+        args.show_diff = True
 
-    if not (print_ics or show_diff or write):
+    if not (args.print_ics or args.show_diff or args.write):
         logging.warning("No --print-ics or --show-diff or --write specified. "
                         "Nothing to do, exiting now.")
         return 0
 
-    return do_stuff(icsfilename, rate, workfilename, print_ics, show_diff, write, force)
+    return do_stuff(args)
 
 
 
