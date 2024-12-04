@@ -361,6 +361,54 @@ def update_course(wf, newsec, icsstart, icsend):
 
 
 
+def do_stuff(icsfilename, rate, workfilename, print_ics, show_diff, write, force):
+    logging.info("Reading ics file: %s", icsfilename)
+    icswf = ics_to_workfile(icsfilename, rate)
+
+    if print_ics:
+        print(icswf)
+
+    if workfilename is None:
+        logging.debug("No workfile specified, exiting")
+        return 0
+
+    # Plannings are sent by full weeks, sometimes more than one at a time.
+    icsstart = icswf.first_date()
+    icsend = icswf.last_date()
+    icsstart -= datetime.timedelta(days=icsstart.weekday())
+    icsend += datetime.timedelta(days=7 - icsend.weekday())
+
+    logging.info("Reading workfile %s", workfilename)
+    wf = workfile.Workfile.fromfile(workfilename)
+    for sec in icswf.sections:
+        update_course(wf, sec, icsstart, icsend)
+
+    newworkfile = workfilename + ".new"
+    with open(newworkfile, "w") as fp:
+        print(wf, file=fp)
+        print("", file=fp)
+
+    if show_diff:
+        subprocess.call(["diff", "--color", "--text", "--unified", "--show-function-line=^#",
+                         workfilename, newworkfile])
+
+    if write and not force:
+        res = input("Write these changes? [yN] ")
+        if not res or res not in "yY":
+            logging.info("Not writing the changes. New version still accessible in: %s",
+                         newworkfile)
+            write = False
+
+    if write:
+        bakworkfile = workfilename + ".bak"
+        logging.info("Writing changes to %s, old workfile copied to %s",
+                     workfilename, bakworkfile)
+        shutil.move(workfilename, bakworkfile)
+        shutil.move(newworkfile, workfilename)
+
+    return 0
+
+
 
 def main():
     locale.setlocale(locale.LC_ALL, '')
@@ -420,51 +468,7 @@ def main():
                         "Nothing to do, exiting now.")
         return 0
 
-    logging.info("Reading ics file: %s", icsfilename)
-    icswf = ics_to_workfile(icsfilename, rate)
-
-    if print_ics:
-        print(icswf)
-
-    if workfilename is None:
-        logging.debug("No workfile specified, exiting")
-        return 0
-
-    # Plannings are sent by full weeks, sometimes more than one at a time.
-    icsstart = icswf.first_date()
-    icsend = icswf.last_date()
-    icsstart -= datetime.timedelta(days=icsstart.weekday())
-    icsend += datetime.timedelta(days=7 - icsend.weekday())
-
-    logging.info("Reading workfile %s", workfilename)
-    wf = workfile.Workfile.fromfile(workfilename)
-    for sec in icswf.sections:
-        update_course(wf, sec, icsstart, icsend)
-
-    newworkfile = workfilename + ".new"
-    with open(newworkfile, "w") as fp:
-        print(wf, file=fp)
-        print("", file=fp)
-
-    if show_diff:
-        subprocess.call(["diff", "--color", "--text", "--unified", "--show-function-line=^#",
-                         workfilename, newworkfile])
-
-    if write and not force:
-        res = input("Write these changes? [yN] ")
-        if not res or res not in "yY":
-            logging.info("Not writing the changes. New version still accessible in: %s",
-                         newworkfile)
-            write = False
-
-    if write:
-        bakworkfile = workfilename + ".bak"
-        logging.info("Writing changes to %s, old workfile copied to %s",
-                     workfilename, bakworkfile)
-        shutil.move(workfilename, bakworkfile)
-        shutil.move(newworkfile, workfilename)
-
-    return 0
+    return do_stuff(icsfilename, rate, workfilename, print_ics, show_diff, write, force)
 
 
 
