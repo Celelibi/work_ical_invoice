@@ -265,6 +265,21 @@ def _update_course_warn_date_only_match(added_entries, removed_entries):
 
 
 
+def _update_course_apply_changes(wfsec, added_entries, removed_entries):
+    """Add and remove entries to a Workfile section."""
+
+    # Add new entries
+    for added_entry in added_entries.elements():
+        wfsec.entries.append(added_entry)
+
+    # Find and discard removed entries
+    for removed_entry in removed_entries.elements():
+        wfsec.entries.remove(removed_entry)
+
+    return wfsec
+
+
+
 def update_course(wf, newsec, icsstart, icsend):
     """Update the workfile wf in the interval icsstart - icsend according to newsec.
 
@@ -323,13 +338,7 @@ def update_course(wf, newsec, icsstart, icsend):
     added_entries, removed_entries = _update_course_ignore_rate_nonmatch(added_entries, removed_entries)
     added_entries, removed_entries = _update_course_warn_date_only_match(added_entries, removed_entries)
 
-    # Add new entries
-    for added_entry in added_entries.elements():
-        wfsec.entries.append(added_entry)
-
-    # Find and discard removed entries
-    for removed_entry in removed_entries.elements():
-        wfsec.entries.remove(removed_entry)
+    wfsec = _update_course_apply_changes(wfsec, added_entries, removed_entries)
 
     if not added_entries and not removed_entries:
         logging.debug("Not trying to sort an untouched section")
