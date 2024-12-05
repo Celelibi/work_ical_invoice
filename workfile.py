@@ -59,7 +59,7 @@ class EntryComment(Entry):
 
 
 @dataclasses.dataclass
-class WorkfileSection:
+class Section:
     """A workfile section.
 
     A section is a set of lines in the workfile separated by blank lines.
@@ -197,7 +197,7 @@ class Workfile:
         if not entries:
             raise StopIteration
 
-        return WorkfileSection(entries)
+        return Section(entries)
 
     @classmethod
     def fromfile(cls, workfilename):
@@ -219,7 +219,7 @@ class Workfile:
 
 
 
-class WorkfileSectionFiltered:
+class SectionFiltered:
     """Section of a date-filtered workfile.
 
     Sections can be filtered by date so that only entries between two dates are
@@ -227,7 +227,7 @@ class WorkfileSectionFiltered:
     """
 
     def __init__(self, sec, start, end):
-        assert isinstance(sec, WorkfileSection)
+        assert isinstance(sec, Section)
 
         self.section = sec
         self.start_date = start
@@ -259,12 +259,12 @@ class WorkfileSectionFiltered:
     def filter(self, start, end):
         """Filter the workfile according to a date interval.
 
-        Returns another WorkfileSectionFiltered.
+        Returns another SectionFiltered.
         """
 
         start = max(start, self.start_date)
         end = min(end, self.end_date)
-        return WorkfileSectionFiltered(self.section, start, end)
+        return SectionFiltered(self.section, start, end)
 
     def __str__(self):
         prependtitle_comment = [self.title_comment]
@@ -307,7 +307,7 @@ class WorkfileFiltered:
                 continue
 
             if sec_first < self.end_date and sec_last >= self.start_date:
-                ret.append(WorkfileSectionFiltered(s, self.start_date, self.end_date))
+                ret.append(SectionFiltered(s, self.start_date, self.end_date))
         return ret
 
     def __str__(self):
