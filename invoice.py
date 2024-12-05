@@ -27,7 +27,7 @@ class InvoiceTextError(InvoiceContentError):
 
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(order=True, frozen=True)
 class InvoiceItem:
     """Represents an invoice item.
 
