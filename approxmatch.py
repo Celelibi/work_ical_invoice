@@ -40,8 +40,10 @@ def approx_score(s1, s2):
 
 
 
-def approx_match(nail, haystack):
+def approx_match(nail, haystack, key=None):
     """This function looks for a nail (not quite a needle) in a haystack. It
     returns the matching needle."""
 
-    return min(haystack, key=lambda hay: approx_score(nail, hay))
+    if key is None:
+        key = lambda x: x
+    return min(haystack, key=lambda hay: approx_score(nail, key(hay)))
