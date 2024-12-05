@@ -231,11 +231,11 @@ def update_invoice_file(args, sec):
     invoice_file = args.invoice_file
     template = args.template
 
+    infile = invoice_file
     if template is not None:
-        inv = invoice.Invoice.fromfile(template)
-    else:
-        inv = invoice.Invoice.fromfile(invoice_file)
+        infile = template
 
+    inv = invoice.Invoice.fromfile(infile)
     update_invoice(inv, sec)
 
     new_invoice_file = invoice_file + ".new"
