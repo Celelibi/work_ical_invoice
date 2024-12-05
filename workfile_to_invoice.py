@@ -258,14 +258,22 @@ def update_invoice_file(args, sec):
 
     if args.write:
         bak_invoice_file = invoice_file + ".bak"
-        logging.info("Writing changes to %s, old workfile copied to %s",
-                     invoice_file, bak_invoice_file)
+        backed_up = False
         try:
             shutil.move(invoice_file, bak_invoice_file)
         except FileNotFoundError as e:
             if e.filename != invoice_file:
                 raise
+        else:
+            backed_up = True
+
         shutil.move(new_invoice_file, invoice_file)
+
+        if backed_up:
+            logging.info("Writing changes to %s, old workfile copied to %s",
+                         invoice_file, bak_invoice_file)
+        else:
+            logging.info("Invoice written to %s", invoice_file)
 
 
 
