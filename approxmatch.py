@@ -7,6 +7,9 @@ The approximate match doesn't care about the word order or incompleteness. See
 function docstring for more information.
 """
 
+import re
+
+
 
 def levenshtein(s1, s2):
     """Levenshtein distance between two strings."""
@@ -34,8 +37,8 @@ def approx_score(s1, s2):
     The final score is the sum of all the best-match scores.
     """
 
-    l1 = s1.lower().split()
-    l2 = s2.lower().split()
+    l1 = re.sub(r'\W+', " ", s1.lower()).split()
+    l2 = re.sub(r'\W+', " ", s2.lower()).split()
     return sum(min(levenshtein(w1, w2) for w2 in l2) for w1 in l1)
 
 
