@@ -2,6 +2,7 @@
 
 import argparse
 import collections
+import dataclasses
 import datetime
 import locale
 import logging
@@ -93,6 +94,67 @@ def find_section(wf, title):
 
 
 
+def partial_match_dataclass(ref, data, **include_fields):
+    """Find the subset of `data' that are equal to `ref' when comparing only
+    a subset of fields.
+
+    By default, only fields defined with compare=True (the default) are
+    compared.
+    Additional keyword arguments allow to select which fields are compared.
+    True values include the field name in the comparison, False values ignore
+    them. If all values are True, the default is to exclude fields. If all the
+    values are False, the default is to include the fields defined with
+    compare=True.
+
+    Except when forcing the inclusion of a field defined compare=False, mixing
+    True and False keyword arguments is not allowed.
+    """
+
+    fields = set()
+    for f in dataclasses.fields(ref):
+        if f.compare or include_fields.pop(f.name, False):
+            fields.add(f.name)
+
+    if not any(include_fields.values()):
+        fields -= include_fields.keys()
+    elif all(include_fields.values()):
+        fields &= include_fields.keys()
+    else:
+        raise NotImplementedError("Mixing True and False values not supported")
+
+    return [d for d in data if all(getattr(ref, f) == getattr(d, f) for f in fields)]
+
+
+
+def match_items(ref, items, **include_fields):
+    """Match items using function partial_match_dataclass.
+    """
+
+    assert "desc" not in include_fields, "Items are always matched with an approximate description"
+    matches = partial_match_dataclass(ref, items, desc=False, **include_fields)
+    return [m for m in matches if approxmatch.approx_score(ref.desc, m.desc) / len(ref.desc) < 0.1]
+
+
+
+def _update_invoice_ignore_sum_match(added, removed):
+    """If an item already match a sum of existing items, match them. Allow
+    approximate description."""
+
+    for a in added.elements():
+        matches = match_items(a, removed.elements(), time=False)
+        total_time = sum(m.time for m in matches)
+
+        if total_time == a.time:
+            logging.debug("Ignoring a sum-match for item: %s", a)
+            for m in matches:
+                logging.debug("Partial-match: %s", m)
+                removed[m] -= 1
+            added[a] -= 1
+
+    return added, removed
+
+
+
 def update_invoice(inv, sec):
     """Update an Invoice object to have all the items related to the Workfile section."""
 
@@ -108,6 +170,8 @@ def update_invoice(inv, sec):
 
     for item in newitems & curitems:
         logging.debug("Ignoring a match: %s", item)
+
+    added, removed = _update_invoice_ignore_sum_match(added, removed)
 
     inv.items = sorted((curitems - removed + added).elements())
     inv.invdate = datetime.date.today()
