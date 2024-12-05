@@ -270,6 +270,9 @@ def update_invoice_file(args, sec):
 
 
 def main():
+    """Main function. Parse the arguments, set the logging level, perform some
+    sanity checks and pass the control to update_invoice_file."""
+
     locale.setlocale(locale.LC_ALL, '')
     logging.config.fileConfig(os.path.join(SELFPATH, "logconf.ini"),
                               disable_existing_loggers=False)
