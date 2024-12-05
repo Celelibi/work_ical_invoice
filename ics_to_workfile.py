@@ -132,7 +132,7 @@ def ics_to_workfile(ics, rate):
         if students:
             sectitle_comment += " avec " + students.removeprefix("Groupe d'étudiants : ")
 
-        sec = workfile.WorkfileSection([workfile.EntryComment(sectitle_comment)])
+        sec = workfile.Section([workfile.EntryComment(sectitle_comment)])
         for date, evs in bydate.items():
             total_duration = sum_events_duration(evs).normalize()
             entry = workfile.EntryFull(date, total_duration, rate)
