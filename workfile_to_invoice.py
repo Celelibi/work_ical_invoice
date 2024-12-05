@@ -225,8 +225,11 @@ def update_invoice(inv, sec):
 
 
 
-def update_invoice_file(invoice_file, sec, show_diff=False, write=False, force=False, template=None):
+def update_invoice_file(args, sec):
     """Update an invoice file according to the entries in a given Workfile section."""
+
+    invoice_file = args.invoice_file
+    template = args.template
 
     if template is not None:
         inv = invoice.Invoice.fromfile(template)
@@ -239,21 +242,21 @@ def update_invoice_file(invoice_file, sec, show_diff=False, write=False, force=F
     with open(new_invoice_file, "w") as fp:
         fp.write(str(inv))
 
-    if show_diff:
+    if args.show_diff:
         subprocess.call(["diff", "--color", "--new-file", "--text", "--unified",
                          invoice_file, new_invoice_file])
 
-    if not write:
+    if not args.write:
         os.unlink(new_invoice_file)
 
-    if write and not force:
+    if args.write and not args.force:
         res = input("Write these changes? [yN] ")
         if not res or res not in "yY":
             logging.info("Not writing the changes. New version still accessible in: %s",
                          new_invoice_file)
-            write = False
+            args.write = False
 
-    if write:
+    if args.write:
         bak_invoice_file = invoice_file + ".bak"
         logging.info("Writing changes to %s, old workfile copied to %s",
                      invoice_file, bak_invoice_file)
@@ -297,16 +300,6 @@ def main():
                         help="Diminue le niveau de verbosité")
 
     args = parser.parse_args()
-
-    workfilename = args.workfile
-    list_sections = args.list_sections
-    section_title = args.section_title
-    invoice_dir = args.invoice_dir
-    invoice_file = args.invoice_file
-    template = args.template
-    show_diff = args.show_diff
-    write = args.write
-    force = args.force
     verbose = args.verbose - args.quiet
 
     loglevels = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "NOTSET"]
@@ -316,44 +309,44 @@ def main():
     verbose = min(len(loglevels) - 1, max(0, curlevel + verbose))
     ch.setLevel(loglevels[verbose])
 
-    if not (show_diff or write or list_sections):
+    if not (args.show_diff or args.write or args.list_sections):
         logging.warning("No --show-diff or --write or --list-sections specified. " \
                         "Nothing to do, exiting now.")
         return 0
 
-    if workfilename is None:
+    if args.workfile is None:
         logging.error("No workfile given")
         return 1
 
-    if (show_diff or write) and section_title is None:
+    if (args.show_diff or args.write) and args.section_title is None:
         logging.error("Automatic section - invoice matching not supported yet. Use --section-title")
         return 1
 
-    if (show_diff or write) and invoice_dir is None and invoice_file is None:
+    if (args.show_diff or args.write) and args.invoice_dir is None and args.invoice_file is None:
         logging.error("No invoice dir or invoice file given")
         return 1
 
-    if (show_diff or write) and invoice_file is None:
+    if (args.show_diff or args.write) and args.invoice_file is None:
         logging.error("Automatic section - invoice matching not supported yet. Use --invoice-file")
         return 1
 
-    if force and not write:
+    if args.force and not args.write:
         logging.info("--force used without --write is ignored")
 
-    if write and not force and not show_diff:
+    if args.write and not args.force and not args.show_diff:
         logging.debug("--write will ask for confirmation, enabling --show-diff")
-        show_diff = True
+        args.show_diff = True
 
-    wf = workfile.Workfile.fromfile(workfilename)
+    wf = workfile.Workfile.fromfile(args.workfile)
 
-    if list_sections:
-        list_titles_dates(wf, section_title)
+    if args.list_sections:
+        list_titles_dates(wf, args.section_title)
 
-        if not (show_diff or write):
+        if not (args.show_diff or args.write):
             return 0
 
-    sec = find_section(wf, section_title)
-    update_invoice_file(invoice_file, sec, show_diff, write, force, template)
+    sec = find_section(wf, args.section_title)
+    update_invoice_file(args, sec)
 
     return 0
 
