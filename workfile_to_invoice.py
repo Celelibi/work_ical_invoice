@@ -217,8 +217,10 @@ def update_invoice(inv, sec):
     added, removed = _update_invoice_ignore_sum_match(added, removed)
     added, removed = _update_invoice_fix_partial(added, removed, curitems)
 
-    inv.items = sorted((curitems - removed + added).elements())
-    inv.invdate = datetime.date.today()
+    if added or removed:
+        inv.items = sorted((curitems - removed + added).elements())
+        inv.invdate = datetime.date.today()
+
     return inv
 
 
