@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import collections
 import datetime
 import locale
 import logging
@@ -95,11 +96,20 @@ def find_section(wf, title):
 def update_invoice(inv, sec):
     """Update an Invoice object to have all the items related to the Workfile section."""
 
-    newitems = []
+    newitems = collections.Counter()
     for e in sec.full_entries:
-        newitems.append(invoice.Item(sec.title, e.date, e.hours, "heures", e.rate, 0))
+        item = invoice.Item(sec.title, e.date, e.hours, "heures", e.rate, 0)
+        newitems[item] += 1
 
-    inv.items = newitems
+    curitems = collections.Counter(inv.items)
+
+    added = newitems - curitems
+    removed = curitems - newitems
+
+    for item in newitems & curitems:
+        logging.debug("Ignoring a match: %s", item)
+
+    inv.items = sorted((curitems - removed + added).elements())
     inv.invdate = datetime.date.today()
     return inv
 
