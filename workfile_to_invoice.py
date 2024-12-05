@@ -155,6 +155,49 @@ def _update_invoice_ignore_sum_match(added, removed):
 
 
 
+def _update_invoice_fix_partial(added, removed, curitems):
+    """If existing items match everything but are missing some time, either
+    fix the item or add one. Allow approximate description."""
+
+    for a in added.elements():
+        matches = match_items(a, removed.elements(), time=False)
+        total_time = sum(m.time for m in matches)
+
+        if len(matches) == 1:
+            m = matches[0]
+            logging.debug("Fixing in-place partial-match for item: %s", a)
+            logging.debug("Partial-match: %s", m)
+            removed[m] -= 1
+            added[a] -= 1
+
+            curitems[m] -= 1
+            newitem = invoice.Item(m.desc, m.date, a.time, m.unit, m.rate, m.vat)
+            curitems[newitem] += 1
+
+        elif len(matches) > 1 and total_time < a.time:
+            logging.debug("Found partial matches that don't add up to the amount "
+                          "of hours for: %s", a)
+            for m in matches:
+                logging.debug("Partial-match: %s", m)
+                removed[m] -= 1
+            added[a] -= 1
+            remtime = a.time - total_time
+            logging.info("Adding new item with remaining hours: %f", remtime)
+
+            # Apply immediately to avoid further matching.
+            newitem = invoice.Item(matches[0].desc, a.date, remtime, a.unit, a.rate, a.vat)
+            curitems[newitem] += 1
+
+        elif len(matches) > 1 and total_time > a.time:
+            # Too many hours? Let it go to a remove and add
+            logging.debug("Too many hours (%s) for: %s", total_time, a)
+            for m in matches:
+                logging.debug("Item counting toward the overtime: %s", m)
+
+    return added, removed
+
+
+
 def update_invoice(inv, sec):
     """Update an Invoice object to have all the items related to the Workfile section."""
 
@@ -172,6 +215,7 @@ def update_invoice(inv, sec):
         logging.debug("Ignoring a match: %s", item)
 
     added, removed = _update_invoice_ignore_sum_match(added, removed)
+    added, removed = _update_invoice_fix_partial(added, removed, curitems)
 
     inv.items = sorted((curitems - removed + added).elements())
     inv.invdate = datetime.date.today()
