@@ -28,7 +28,7 @@ class InvoiceTextError(InvoiceContentError):
 
 
 @dataclasses.dataclass(order=True, frozen=True)
-class InvoiceItem:
+class Item:
     """Represents an invoice item.
 
     The items fields are:
@@ -70,7 +70,7 @@ class Invoice:
 
     invnum: int
     invdate: datetime.date
-    items: list[InvoiceItem]
+    items: list[Item]
     smallprints: str
     template: str = None
 
@@ -139,7 +139,7 @@ class Invoice:
             time = decimal.Decimal(time)
             rate = decimal.Decimal(rate)
             vat = decimal.Decimal(vat)
-            items.append(InvoiceItem(itemdesc, itemdate, time, unit, rate, vat))
+            items.append(Item(itemdesc, itemdate, time, unit, rate, vat))
 
         matches = re.finditer(r'\\additem\{\{([^}]*)\}\}\{\{([^}]*)\}\}\{\{([^}]*)\}\}\{\{([^}]*)\}\}\{\{([^}]*)\}\}', template)
         matches = list(matches)

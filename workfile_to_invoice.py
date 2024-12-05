@@ -97,7 +97,7 @@ def update_invoice(inv, sec):
 
     newitems = []
     for e in sec.full_entries:
-        newitems.append(invoice.InvoiceItem(sec.title, e.date, e.hours, "heures", e.rate, 0))
+        newitems.append(invoice.Item(sec.title, e.date, e.hours, "heures", e.rate, 0))
 
     inv.items = newitems
     inv.invdate = datetime.date.today()
