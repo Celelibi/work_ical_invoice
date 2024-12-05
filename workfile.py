@@ -15,13 +15,13 @@ class UnsortableError(ValueError):
 
 
 @dataclasses.dataclass
-class WorkfileEntry:
+class Entry:
     """Base class for the workfile entries."""
 
 
 
 @dataclasses.dataclass(order=True, unsafe_hash=True)
-class WorkfileEntryFull(WorkfileEntry):
+class EntryFull(Entry):
     """Full entry of a workfile.
 
     It contains the following fields:
@@ -48,7 +48,7 @@ class WorkfileEntryFull(WorkfileEntry):
 
 
 @dataclasses.dataclass
-class WorkfileEntryComment(WorkfileEntry):
+class EntryComment(Entry):
     """An workfile entry consisting of a single comment and nothing else."""
 
     comment: str
@@ -71,14 +71,14 @@ class WorkfileSection:
 
     def _title_comment_count(self):
         for i, e in enumerate(self.entries):
-            if not isinstance(e, WorkfileEntryComment):
+            if not isinstance(e, EntryComment):
                 return i
 
         return len(self.entries)
 
     @property
     def title_comment(self):
-        """Return a WorkfileEntryComment representing the section title.
+        """Return a EntryComment representing the section title.
 
         Return None if there is no comment at the beginning of the section.
         Return the section entry itself if there's only one comment entry.
@@ -93,7 +93,7 @@ class WorkfileSection:
         if n == 1:
             return self.entries[0]
 
-        return WorkfileEntryComment("\n".join(c.comment for c in self.entries[:n]))
+        return EntryComment("\n".join(c.comment for c in self.entries[:n]))
 
     @property
     def title(self):
@@ -111,7 +111,7 @@ class WorkfileSection:
     def full_entries(self):
         """A view of self.entries where only the full entries are returned."""
 
-        return (e for e in self.entries if isinstance(e, WorkfileEntryFull))
+        return (e for e in self.entries if isinstance(e, EntryFull))
 
     def first_date(self):
         """Returns the earliest date of the section."""
@@ -129,7 +129,7 @@ class WorkfileSection:
         If the section contain comment entries, return UnsortableError.
         """
         n = self._title_comment_count()
-        if not all(isinstance(e, WorkfileEntryFull) for e in self.entries[n:]):
+        if not all(isinstance(e, EntryFull) for e in self.entries[n:]):
             raise UnsortableError("Can't sort sections with comments")
         self.entries[n:] = sorted(self.entries[n:])
 
@@ -175,7 +175,7 @@ class Workfile:
                 break
 
             if line.startswith("#"):
-                entries.append(WorkfileEntryComment(line[1:]))
+                entries.append(EntryComment(line[1:]))
                 continue
 
             date, hours, rate, *linecomm = line.split(" ", maxsplit=3)
@@ -192,7 +192,7 @@ class Workfile:
                 prespaces = None
                 linecomm = None
 
-            entries.append(WorkfileEntryFull(date, hours, rate, linecomm, prespaces))
+            entries.append(EntryFull(date, hours, rate, linecomm, prespaces))
 
         if not entries:
             raise StopIteration
@@ -235,7 +235,7 @@ class WorkfileSectionFiltered:
 
     @property
     def title_comment(self):
-        """The title WorkfileEntryComment of the underlying section."""
+        """The title EntryComment of the underlying section."""
 
         return self.section.title_comment
 
