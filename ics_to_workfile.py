@@ -400,8 +400,13 @@ def do_stuff(args):
         print("", file=fp)
 
     if args.show_diff:
-        subprocess.call(["diff", "--color", "--text", "--unified", "--show-function-line=^#",
-                         workfilename, newworkfile])
+        exitvalue = subprocess.call(["diff", "--color", "--text", "--unified",
+                                     "--show-function-line=^#", workfilename, newworkfile])
+        if exitvalue == 0:
+            logging.info("No change made to the Workfile")
+            if args.write:
+                logging.info("Nothing to write")
+                args.write = False
 
     if args.write and not args.force:
         res = input("Write these changes? [yN] ")
