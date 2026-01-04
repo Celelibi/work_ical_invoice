@@ -391,7 +391,7 @@ def do_stuff(args):
     workfilename = args.workfile
     logging.info("Reading workfile %s", workfilename)
     wf = workfile.Workfile.fromfile(workfilename)
-    for sec in icswf.sections:
+    for sec in icswf:
         update_section(wf, sec, icsstart, icsend)
 
     newworkfile = workfilename + ".new"

@@ -217,6 +217,12 @@ class Workfile:
 
         return wf
 
+    def __getitem__(self, idx):
+        return self.sections[idx]
+
+    def __len__(self):
+        return len(self.sections)
+
     def __str__(self):
         return "\n\n".join(str(s) for s in self.sections)
 
