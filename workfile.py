@@ -133,6 +133,9 @@ class Section:
             raise UnsortableError("Can't sort sections with comments")
         self.entries[n:] = sorted(self.entries[n:])
 
+    def __iter__(self):
+        return iter(self.full_entries)
+
     def __str__(self):
         return "\n".join(str(e) for e in self.entries)
 

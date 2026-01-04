@@ -331,7 +331,7 @@ def update_section(wf, newsec, icsstart, icsend):
     wffsec = wff.sections[0].filter(icsstart, icsend)
     wfsec = wffsec.section
 
-    newsec_entries = collections.Counter(newsec.full_entries)
+    newsec_entries = collections.Counter(newsec)
     current_entries = collections.Counter(wffsec.full_entries)
 
     added = newsec_entries - current_entries
