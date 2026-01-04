@@ -269,6 +269,9 @@ class SectionFiltered:
         end = min(end, self.end_date)
         return SectionFiltered(self.section, start, end)
 
+    def __iter__(self):
+        return iter(self.full_entries)
+
     def __str__(self):
         prependtitle_comment = [self.title_comment]
         if prependtitle_comment[0] is None:

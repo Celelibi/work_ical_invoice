@@ -202,7 +202,7 @@ def update_invoice(inv, sec):
     """Update an Invoice object to have all the items related to the Workfile section."""
 
     newitems = collections.Counter()
-    for e in sec.full_entries:
+    for e in sec:
         item = invoice.Item(sec.title, e.date, e.hours, "heures", e.rate, 0)
         newitems[item] += 1
 
