@@ -69,25 +69,25 @@ def find_section(wf, title):
     """Find the Workfile section with the given title."""
 
     wff = filter_sections(wf, title)
-    if len(wff.sections) == 1:
-        return wff.sections[0].section
+    if len(wff) == 1:
+        return wff[0].section
 
-    if len(wff.sections) > 1:
+    if len(wff) > 1:
         logging.warning("%d sections with name %r have been found. Using the last one.",
-                        len(wff.sections), title)
-        return wff.sections[-1].section
+                        len(wff), title)
+        return wff[-1].section
 
     logging.info("No section with exact title %r", title)
     logging.info("Switching to approximate matching")
 
     wff = filter_sections(wf)
-    titles = [s.title for s in wff.sections]
+    titles = [s.title for s in wff]
     actual_title = approxmatch.approx_match(title, titles)
 
     if approxmatch.approx_score(title, actual_title) / len(actual_title) < 0.1:
         logging.info("Matched with: %s", actual_title)
         wff = filter_sections(wf, actual_title)
-        return wff.sections[-1].section
+        return wff[-1].section
 
     logging.error("No good match found for title: %s", title)
     raise SectionNameError(f"No match found for title: {title!r}")

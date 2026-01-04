@@ -170,14 +170,14 @@ def partial_entry_matches(entry, entries):
 
 def _update_section_approx_title_match(wf, title, start, end):
     wff = wf.filter(start, end, title)
-    if len(wff.sections) != 0:
+    if len(wff) != 0:
         return wff
 
     logging.info("No section found for: %s", title)
     logging.info("Doing an approximate search")
 
     wff_notitle = wf.filter(start, end)
-    titles = [s.title for s in wff_notitle.sections]
+    titles = [s.title for s in wff_notitle]
     actual_title = approxmatch.approx_match(title, titles)
 
     if approxmatch.approx_score(title, actual_title) / len(actual_title) < 0.1:
@@ -316,19 +316,19 @@ def update_section(wf, newsec, icsstart, icsend):
     sec_search_end = icsend + datetime.timedelta(days=92)
     wff = _update_section_approx_title_match(wf, newsec.title, sec_search_start, sec_search_end)
 
-    if len(wff.sections) == 0:
+    if len(wff) == 0:
         logging.info("No section found for: %s", newsec.title)
         logging.info("Adding it")
         wf.sections.append(newsec)
         return
 
-    if len(wff.sections) > 1:
+    if len(wff) > 1:
         logging.error("Several sections in the workfile match the date interval: "
                       "%s to %s with the name %s", sec_search_start, sec_search_end, newsec.title)
         logging.error("Not doing anything about it!")
         return
 
-    wffsec = wff.sections[0].filter(icsstart, icsend)
+    wffsec = wff[0].filter(icsstart, icsend)
     wfsec = wffsec.section
 
     newsec_entries = collections.Counter(newsec)

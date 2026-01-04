@@ -322,5 +322,11 @@ class WorkfileFiltered:
                 ret.append(SectionFiltered(s, self.start_date, self.end_date))
         return ret
 
+    def __getitem__(self, idx):
+        return self.sections[idx]
+
+    def __len__(self):
+        return len(self.sections)
+
     def __str__(self):
         return "\n\n".join(str(s) for s in self.sections)
