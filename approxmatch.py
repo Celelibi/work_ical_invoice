@@ -27,6 +27,51 @@ def levenshtein(s1, s2):
 
 
 
+def _greedy_multimatch(s1, s2):
+    """This function represents the strings as Bag-of-Words and match each word
+    of s1 with the closest word of s2 w.r.t levenshtein edit distance. Words of
+    s2 can be matched with several words of s1.
+    The final score is the sum of all the matched edit distances."""
+
+    l1 = re.sub(r'\W+', " ", s1.lower()).split()
+    l2 = re.sub(r'\W+', " ", s2.lower()).split()
+    return sum(min(levenshtein(w1, w2) for w2 in l2) for w1 in l1)
+
+
+
+def _greedy_multimatch2(s1, s2):
+    """This function represents the strings as Bag-of-Words and match each word
+    of s1 with the closest word of s2 w.r.t levenshtein edit distance. First
+    the closest words are matched and removed from the set of words. Then this
+    is repeated as long as there are words in either bag.
+    The final score is the sum of all the matched edit distances."""
+
+    l1 = re.sub(r'\W+', " ", s1.lower()).split()
+    l2 = re.sub(r'\W+', " ", s2.lower()).split()
+
+    # Distance matrix is represented as a list of tuple (distance, y, x)
+    dists = [(levenshtein(w1, w2), i, j) for i, w1 in enumerate(l1) for j, w2 in enumerate(l2)]
+    dists.sort()
+
+    # Words are "removed" from the bags by ignoring their rows and columns in
+    # the distance matrix
+    done1 = set()
+    done2 = set()
+    total = 0
+
+    for d, i, j in dists:
+        if i in done1 or j in done2:
+            continue
+
+        total += d
+        done1.add(i)
+        done2.add(j)
+
+    return total + abs(len(l1) - len(l2))
+    return total, abs(len(l1) - len(l2))
+
+
+
 def approx_score(s1, s2):
     """Score of "likeness" of two strings.
 
@@ -36,10 +81,8 @@ def approx_score(s1, s2):
     of the second string.
     The final score is the sum of all the best-match scores.
     """
+    return _greedy_multimatch2(s1, s2)
 
-    l1 = re.sub(r'\W+', " ", s1.lower()).split()
-    l2 = re.sub(r'\W+', " ", s2.lower()).split()
-    return sum(min(levenshtein(w1, w2) for w2 in l2) for w1 in l1)
 
 
 
