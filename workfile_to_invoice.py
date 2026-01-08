@@ -46,22 +46,23 @@ def filter_sections(wf, titles=None):
 
 
 
-def list_titles_dates(wf, title=None):
-    """List the section titles with the date range of the entries. If a title
-    is given, show also the matching score."""
+def list_titles_dates(wf, titles=None):
+    """List the sections titles and the date range of the entries. If one or
+    more titles are given, show also the matching score."""
 
-    sections = filter_sections(wf).sections
-    if title is not None:
-        scores = {s.title: approxmatch.approx_score(title, s.title) for s in sections}
-        sections = sorted(sections, key=lambda s: scores[s.title])
+    wff = filter_sections(wf)
+    if titles is None:
+        for sec in wff:
+            s = sec.section
+            print(f"{s.first_date()} - {s.last_date()}: {s.title}")
+        return
 
+    scores = {s.title: min(approxmatch.approx_score(t, s.title) for t in titles) for s in wff}
+    sections = sorted(wff, key=lambda s: scores[s.title])
     for sec in sections:
         s = sec.section
-        if title is None:
-            print(f"{s.first_date()} - {s.last_date()}: {s.title}")
-        else:
-            score = scores[s.title]
-            print(f"{s.first_date()} - {s.last_date()}: score {score:2d}: {s.title}")
+        score = scores[s.title]
+        print(f"{s.first_date()} - {s.last_date()}: score {score:2d}: {s.title}")
 
 
 
@@ -201,13 +202,14 @@ def _update_invoice_fix_partial(added, removed, curitems):
 
 
 
-def update_invoice(inv, sec):
+def update_invoice(inv, secs):
     """Update an Invoice object to have all the items related to the Workfile section."""
 
     newitems = collections.Counter()
-    for e in sec:
-        item = invoice.Item(sec.title, e.date, e.hours, "heures", e.rate, 0)
-        newitems[item] += 1
+    for sec in secs:
+        for e in sec:
+            item = invoice.Item(sec.title, e.date, e.hours, "heures", e.rate, 0)
+            newitems[item] += 1
 
     curitems = collections.Counter(inv.items)
 
@@ -228,7 +230,7 @@ def update_invoice(inv, sec):
 
 
 
-def update_invoice_file(args, sec):
+def update_invoice_file(args, secs):
     """Update an invoice file according to the entries in a given Workfile section."""
 
     invoice_file = args.invoice_file
@@ -239,7 +241,7 @@ def update_invoice_file(args, sec):
         infile = template
 
     inv = invoice.Invoice.fromfile(infile)
-    update_invoice(inv, sec)
+    update_invoice(inv, secs)
 
     new_invoice_file = invoice_file + ".new"
     with open(new_invoice_file, "w") as fp:
@@ -294,7 +296,7 @@ def main():
                         help="Fichier Workfile à utiliser")
     parser.add_argument("--list-sections", "-l", action="store_true",
                         help="Liste les sections récentes du Workfile disponibles pour --section-title")
-    parser.add_argument("--section-title", "-s",
+    parser.add_argument("--section-title", "-s", action="append",
                         help="Section dont générer ou mettre à jour la facture")
     parser.add_argument("--invoice-dir", "-i",
                         help="Répertoire contenant les fichiers LaTeX des factures")
