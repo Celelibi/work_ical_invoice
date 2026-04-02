@@ -37,12 +37,12 @@ def logging_getHandler(name):
 
 
 
-def filter_sections(wf, title=None):
+def filter_sections(wf, titles=None):
     """Find the recent Workfile sections with the given title."""
 
     date_start = datetime.date.today() - datetime.timedelta(days=91)
     date_end = datetime.date.today() + datetime.timedelta(days=30)
-    return wf.filter(date_start, date_end, title)
+    return wf.filter(date_start, date_end, titles=titles)
 
 
 
@@ -68,7 +68,7 @@ def list_titles_dates(wf, title=None):
 def find_section(wf, title):
     """Find the Workfile section with the given title."""
 
-    wff = filter_sections(wf, title)
+    wff = filter_sections(wf, [title])
     if len(wff) == 1:
         return wff[0].section
 
@@ -86,7 +86,7 @@ def find_section(wf, title):
 
     if approxmatch.approx_score(title, actual_title) / len(actual_title) < 0.1:
         logging.info("Matched with: %s", actual_title)
-        wff = filter_sections(wf, actual_title)
+        wff = filter_sections(wf, [actual_title])
         return wff[-1].section
 
     logging.error("No good match found for title: %s", title)
