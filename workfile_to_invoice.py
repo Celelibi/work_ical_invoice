@@ -66,16 +66,19 @@ def list_titles_dates(wf, title=None):
 
 
 def find_section(wf, title):
-    """Find the Workfile section with the given title."""
+    """Find the Workfile section with the given title. Returns a
+    WorkfileFiltered."""
 
     wff = filter_sections(wf, [title])
     if len(wff) == 1:
-        return wff[0].section
+        return wff
 
     if len(wff) > 1:
         logging.warning("%d sections with name %r have been found. Using the last one.",
                         len(wff), title)
-        return wff[-1].section
+        sec = wff[-1].section
+        wff = wf.filter(sec.first_date(), sec.last_date(), titles=[title])
+        return wff
 
     logging.info("No section with exact title %r", title)
     logging.info("Switching to approximate matching")
@@ -356,8 +359,8 @@ def main():
         if not (args.show_diff or args.write):
             return 0
 
-    sec = find_section(wf, args.section_title)
-    update_invoice_file(args, sec)
+    wff = find_section(wf, args.section_title)
+    update_invoice_file(args, wff.sections)
 
     return 0
 
