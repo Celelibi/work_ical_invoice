@@ -163,7 +163,7 @@ class Workfile:
         Returns a WorkfileFiltered.
         """
 
-        return WorkfileFiltered(self, start, end, title)
+        return WorkfileFiltered(self, start, end, [title])
 
     @staticmethod
     def _read_section(fp):
@@ -287,19 +287,19 @@ class SectionFiltered:
 
 
 class WorkfileFiltered:
-    """A Workfile filtered by date and optionally by title.
+    """A Workfile filtered by date and optionally by titles.
 
     The filter is based on the date and section titles.
     The sections accessible are filtered by date. Only sections containing
     non-comment entries are accessible.
-    If a filter title is given, only the sections with the given title are
+    If a filter title list is given, only the sections with the given titles are
     accessible. If not given (or None), no title restriction is placed.
     """
-    def __init__(self, wf, start, end, title=None):
+    def __init__(self, wf, start, end, titles=None):
         self.workfile = wf
         self.start_date = start
         self.end_date = end
-        self.title = title
+        self.titles = titles
 
     @property
     def sections(self):
@@ -315,7 +315,7 @@ class WorkfileFiltered:
             if sec_first is None or sec_last is None:
                 continue
 
-            if self.title is not None and s.title != self.title:
+            if self.titles is not None and s.title not in self.titles:
                 continue
 
             if sec_first < self.end_date and sec_last >= self.start_date:
