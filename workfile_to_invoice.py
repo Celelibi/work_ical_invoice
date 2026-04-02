@@ -88,13 +88,16 @@ def find_section(wf, title):
     titles = [s.title for s in wff]
     actual_title = approxmatch.approx_match(title, titles)
 
-    if approxmatch.approx_score(title, actual_title) / len(actual_title) < 0.1:
-        logging.info("Matched with: %s", actual_title)
-        wff = filter_sections(wf, [actual_title])
-        return wff[-1].section
+    if approxmatch.approx_score(title, actual_title) / len(actual_title) >= 0.1:
+        logging.error("No good match found for title: %s", title)
+        raise SectionNameError(f"No match found for title: {title!r}")
 
-    logging.error("No good match found for title: %s", title)
-    raise SectionNameError(f"No match found for title: {title!r}")
+    logging.info("Matched with: %s", actual_title)
+    wff = filter_sections(wf, [actual_title])
+    if len(wff) > 1:
+        sec = wff[-1].section
+        wff = wf.filter(sec.first_date(), sec.last_date(), titles=[actual_title])
+    return wff
 
 
 
