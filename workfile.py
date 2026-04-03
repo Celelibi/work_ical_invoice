@@ -157,18 +157,11 @@ class Workfile:
 
         return max((e.date for s in self.sections for e in s.full_entries), default=None)
 
-    def filter(self, start, end, title=None, *, titles=None):
+    def filter(self, start, end, titles=None):
         """Filter the workfile according to a date interval and an optional title.
 
         Returns a WorkfileFiltered.
         """
-
-        if titles is None:
-            titles = []
-        if title is not None:
-            titles.append(title)
-        if not titles:
-            titles = None
 
         return WorkfileFiltered(self, start, end, titles)
 
