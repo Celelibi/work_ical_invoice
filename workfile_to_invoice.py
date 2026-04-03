@@ -78,10 +78,12 @@ def find_section(wf, title):
 
         wff = filter_sections(wf)
         titles = [s.title for s in wff]
+        logging.debug("List of section titles in near time: %r", titles)
         actual_title = approxmatch.approx_match(title, titles)
 
-        if approxmatch.approx_score(title, actual_title) / len(actual_title) >= 0.1:
-            logging.error("No good match found for title: %s", title)
+        score_per_length = approxmatch.approx_score(title, actual_title) / len(actual_title)
+        if score_per_length >= 0.1:
+            logging.error("No good match found for title: %s, best score: %f", title, score_per_length)
             raise SectionNameError(f"No match found for title: {title!r}")
 
         logging.info("Matched with: %s", actual_title)
