@@ -98,6 +98,22 @@ def find_section(wf, title):
 
 
 
+def find_sections(wf, titles):
+    """Find the Workfile sections with the given titles. Returns a
+    WorkfileFiltered.
+    Compared to find_section, this one takes several titles and find at least
+    one section for each.
+    Note that a given title can match several sections if the other titles
+    match sections that spread across a wide date range."""
+
+    secs = [find_section(wf, t)[-1].section for t in titles]
+    first_date = min(sec.first_date() for sec in secs)
+    last_date = max(sec.last_date() for sec in secs)
+    titles = [sec.title for sec in secs]
+    return wf.filter(first_date, last_date, titles=titles)
+
+
+
 def partial_match_dataclass(ref, data, **include_fields):
     """Find the subset of `data' that are equal to `ref' when comparing only
     a subset of fields.
@@ -361,7 +377,7 @@ def main():
         if not (args.show_diff or args.write):
             return 0
 
-    wff = find_section(wf, args.section_title)
+    wff = find_sections(wf, args.section_title)
     update_invoice_file(args, wff.sections)
 
     return 0
