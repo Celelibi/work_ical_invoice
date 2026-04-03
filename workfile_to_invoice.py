@@ -71,32 +71,29 @@ def find_section(wf, title):
     WorkfileFiltered."""
 
     wff = filter_sections(wf, [title])
-    if len(wff) == 1:
-        return wff
+
+    if len(wff) == 0:
+        logging.info("No section with exact title %r", title)
+        logging.info("Switching to approximate matching")
+
+        wff = filter_sections(wf)
+        titles = [s.title for s in wff]
+        actual_title = approxmatch.approx_match(title, titles)
+
+        if approxmatch.approx_score(title, actual_title) / len(actual_title) >= 0.1:
+            logging.error("No good match found for title: %s", title)
+            raise SectionNameError(f"No match found for title: {title!r}")
+
+        logging.info("Matched with: %s", actual_title)
+        title = actual_title
+        wff = filter_sections(wf, [title])
 
     if len(wff) > 1:
         logging.warning("%d sections with name %r have been found. Using the last one.",
                         len(wff), title)
         sec = wff[-1].section
         wff = wf.filter(sec.first_date(), sec.last_date(), titles=[title])
-        return wff
 
-    logging.info("No section with exact title %r", title)
-    logging.info("Switching to approximate matching")
-
-    wff = filter_sections(wf)
-    titles = [s.title for s in wff]
-    actual_title = approxmatch.approx_match(title, titles)
-
-    if approxmatch.approx_score(title, actual_title) / len(actual_title) >= 0.1:
-        logging.error("No good match found for title: %s", title)
-        raise SectionNameError(f"No match found for title: {title!r}")
-
-    logging.info("Matched with: %s", actual_title)
-    wff = filter_sections(wf, [actual_title])
-    if len(wff) > 1:
-        sec = wff[-1].section
-        wff = wf.filter(sec.first_date(), sec.last_date(), titles=[actual_title])
     return wff
 
 
