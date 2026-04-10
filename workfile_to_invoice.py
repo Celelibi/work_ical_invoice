@@ -25,6 +25,18 @@ SELFPATH = os.path.dirname(os.path.realpath(sys.argv[0]))
 class SectionNameError(ValueError):
     """Raised when the given section is not found in the workfile."""
 
+class ParseError(RuntimeError):
+    pass
+
+class InvalidMonthError(ParseError):
+    pass
+
+class InvalidYearError(ParseError):
+    pass
+
+class InvalidDateRangeError(ParseError):
+    pass
+
 
 
 def logging_getHandler(name):
@@ -37,20 +49,130 @@ def logging_getHandler(name):
 
 
 
-def filter_sections(wf, titles=None):
-    """Find the recent Workfile sections with the given title."""
+def parse_month(month, letters_lookup, after=None):
+    today = datetime.date.today()
+    month = month.lower()
 
-    date_start = datetime.date.today() - datetime.timedelta(days=91)
-    date_end = datetime.date.today() + datetime.timedelta(days=30)
+    if "/" in month:
+        m, y = month.split("/")
+
+        try:
+            m = letters_lookup[m]
+        except KeyError:
+            raise InvalidMonthError(f"Invalid month {month!r}, valid values: {list(letters_lookup.keys())}")
+
+        try:
+            y = int(y)
+        except ValueError:
+            raise InvalidYearError(f"Invalid year value: {y}")
+
+        if y < 1000:
+            y += 2000
+
+        return datetime.date(y, m, 1)
+
+    month = month.rstrip(".")
+    try:
+        m = letters_lookup[month]
+    except KeyError:
+        raise InvalidMonthError(f"Invalid month {month!r}, valid values: {list(letters_lookup.keys())}")
+
+    if after is not None:
+        d = datetime.date(after.year, m, 1)
+        if d < after:
+            d = datetime.date(d.year + 1, m, 1)
+    else:
+        d = datetime.date(today.year, m, 1)
+        if d > today:
+            d = datetime.date(d.year - 1, m, 1)
+
+    logging.info("No year provided for month %r, using %d", m, d.year)
+    return d
+
+
+
+def next_month(d):
+    d += datetime.timedelta(days=1) * 31
+    return datetime.datetime(d.year, d.month, 1).date()
+
+
+
+def month_iter(start, end):
+    d = start
+    while d <= end:
+        yield d
+        d = next_month(d)
+
+
+
+def parse_months(months, mindate=None, maxdate=None):
+    curlocale = locale.getlocale()
+
+    # A dict to translate "jan" to "01", etc.
+    month_to_num = {}
+    for i in range(1, 13):
+        d = datetime.datetime.strptime(str(i), "%m")
+        month_to_num[str(i)] = i
+        month_to_num[f"{i:02d}"] = i
+
+        locale.setlocale(locale.LC_ALL, "C")
+        month_to_num[d.strftime("%b").lower().rstrip(".")] = i
+        month_to_num[d.strftime("%b").lower()] = i
+        month_to_num[d.strftime("%B").lower()] = i
+
+        locale.setlocale(locale.LC_ALL, curlocale)
+        month_to_num[d.strftime("%b").lower().rstrip(".")] = i
+        month_to_num[d.strftime("%b").lower()] = i
+        month_to_num[d.strftime("%B").lower()] = i
+
+
+    ret = []
+    for monthranges in months:
+        for monthrange in monthranges.split(","):
+            if "-" in monthrange:
+                start, end = monthrange.split("-", 1)
+                if start:
+                    start = parse_month(start, month_to_num)
+                elif mindate is None:
+                    raise InvalidDateRangeError(f"Can't parse {monthrange}")
+                else:
+                    start = mindate
+                if end:
+                    end = parse_month(end, month_to_num, start)
+                elif maxdate is None:
+                    raise InvalidDateRangeError(f"Can't parse {monthrange}")
+                else:
+                    end = maxdate
+                ret += list(month_iter(start, end))
+            else:
+                ret.append(parse_month(monthrange, month_to_num))
+
+    return ret
+
+
+
+def filter_sections(wf, titles=None, *, date_start=None, date_end=None):
+    """Find the recent Workfile sections with the given title in a given date
+    interval. If the date interval is not given, the current date is used to
+    build an interval [today - 3 month, today + 1 month)."""
+
+    if date_start is None and date_end is None:
+        date_start = datetime.date.today() - datetime.timedelta(days=91)
+        date_end = datetime.date.today() + datetime.timedelta(days=30)
+    elif date_start is None:
+        date_start = date_end - datetime.timedelta(days=121)
+    elif date_end is None:
+        date_end = date_start + datetime.timedelta(days=121)
+
     return wf.filter(date_start, date_end, titles=titles)
 
 
 
-def list_titles_dates(wf, titles=None):
+def list_titles_dates(wf, titles=None, *, date_start=None, date_end=None):
     """List the sections titles and the date range of the entries. If one or
     more titles are given, show also the matching score."""
 
-    wff = filter_sections(wf)
+    wff = filter_sections(wf, date_start=date_start, date_end=date_end)
     if titles is None:
         for sec in wff:
             s = sec.section
@@ -66,17 +188,17 @@ def list_titles_dates(wf, titles=None):
 
 
 
-def find_section(wf, title):
+def find_section(wf, title, date_start=None, date_end=None):
     """Find the Workfile section with the given title. Returns a
     WorkfileFiltered."""
 
-    wff = filter_sections(wf, [title])
+    wff = filter_sections(wf, [title], date_start=date_start, date_end=date_end)
 
     if len(wff) == 0:
         logging.info("No section with exact title %r", title)
         logging.info("Switching to approximate matching")
 
-        wff = filter_sections(wf)
+        wff = filter_sections(wf, date_start=date_start, date_end=date_end)
         titles = [s.title for s in wff]
         logging.debug("List of section titles in near time: %r", titles)
         actual_title = approxmatch.approx_match(title, titles)
@@ -88,7 +210,13 @@ def find_section(wf, title):
 
         logging.info("Matched with: %s", actual_title)
         title = actual_title
-        wff = filter_sections(wf, [title])
+        wff = filter_sections(wf, [title], date_start=date_start, date_end=date_end)
+
+    logging.debug("For title %r, found sections:", title)
+    for sec in wff:
+        logging.debug("# %s", sec.title)
+        for e in sec:
+            logging.debug("    %s", e)
 
     if len(wff) > 1:
         logging.warning("%d sections with name %r have been found. Using the last one.",
@@ -100,18 +228,25 @@ def find_section(wf, title):
 
 
 
-def find_sections(wf, titles):
-    """Find the Workfile sections with the given titles. Returns a
-    WorkfileFiltered.
+def find_sections(wf, titles=None, date_start=None, date_end=None):
+    """Find the Workfile sections that have entries between two given dates and
+    with the given titles. Returns a WorkfileFiltered.
     Compared to find_section, this one takes several titles and find at least
     one section for each.
     Note that a given title can match several sections if the other titles
     match sections that spread across a wide date range."""
 
-    secs = [find_section(wf, t)[-1].section for t in titles]
+    if not titles:
+        return filter_sections(wf, date_start=date_start, date_end=date_end)
+
+    secs = [find_section(wf, t, date_start, date_end)[-1].section for t in titles]
     first_date = min(sec.first_date() for sec in secs)
     last_date = max(sec.last_date() for sec in secs)
     titles = [sec.title for sec in secs]
+    if date_start is not None and date_start > first_date:
+        first_date = date_start
+    if date_end is not None and date_end < last_date:
+        last_date = date_end
     return wf.filter(first_date, last_date, titles=titles)
 
 
@@ -314,6 +449,8 @@ def main():
                         help="Fichier Workfile à utiliser")
     parser.add_argument("--list-sections", "-l", action="store_true",
                         help="Liste les sections récentes du Workfile disponibles pour --section-title")
+    parser.add_argument("--for-month", "-m", metavar="MM[/YYYY]",
+                        help="Générer une facture combinée pour un mois")
     parser.add_argument("--section-title", "-s", action="append",
                         help="Section dont générer ou mettre à jour la facture")
     parser.add_argument("--invoice-dir", "-i",
@@ -352,8 +489,8 @@ def main():
         logging.error("No workfile given")
         return 1
 
-    if (args.show_diff or args.write) and args.section_title is None:
-        logging.error("Automatic section - invoice matching not supported yet. Use --section-title")
+    if (args.show_diff or args.write) and args.section_title is None and args.for_month is None:
+        logging.error("Automatic section - invoice matching not supported yet. Use --section-title or --for-month")
         return 1
 
     if (args.show_diff or args.write) and args.invoice_dir is None and args.invoice_file is None:
@@ -373,13 +510,21 @@ def main():
 
     wf = workfile.Workfile.fromfile(args.workfile)
 
+    date_start = date_end = None
+    if args.for_month is not None:
+        months = parse_months([args.for_month])
+        if len(months) > 1:
+            raise InvalidMonthError("Only a single month is supported at the moment")
+        date_start = months[0]
+        date_end = next_month(date_start)
+
     if args.list_sections:
-        list_titles_dates(wf, args.section_title)
+        list_titles_dates(wf, args.section_title, date_start=date_start, date_end=date_end)
 
         if not (args.show_diff or args.write):
             return 0
 
-    wff = find_sections(wf, args.section_title)
+    wff = find_sections(wf, args.section_title, date_start, date_end)
     update_invoice_file(args, wff.sections)
 
     return 0
