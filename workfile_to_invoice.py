@@ -151,28 +151,11 @@ def parse_months(months, mindate=None, maxdate=None):
 
 
 
-def filter_sections(wf, titles=None, *, date_start=None, date_end=None):
-    """Find the recent Workfile sections with the given title in a given date
-    interval. If the date interval is not given, the current date is used to
-    build an interval [today - 3 month, today + 1 month)."""
-
-    if date_start is None and date_end is None:
-        date_start = datetime.date.today() - datetime.timedelta(days=91)
-        date_end = datetime.date.today() + datetime.timedelta(days=30)
-    elif date_start is None:
-        date_start = date_end - datetime.timedelta(days=121)
-    elif date_end is None:
-        date_end = date_start + datetime.timedelta(days=121)
-
-    return wf.filter(date_start, date_end, titles=titles)
-
-
-
 def list_titles_dates(wf, titles=None, *, date_start=None, date_end=None):
     """List the sections titles and the date range of the entries. If one or
     more titles are given, show also the matching score."""
 
-    wff = filter_sections(wf, date_start=date_start, date_end=date_end)
+    wff = wf.filter(date_start, date_end)
     if titles is None:
         for sec in wff:
             s = sec.section
@@ -192,13 +175,13 @@ def find_section(wf, title, date_start=None, date_end=None):
     """Find the Workfile section with the given title. Returns a
     WorkfileFiltered."""
 
-    wff = filter_sections(wf, [title], date_start=date_start, date_end=date_end)
+    wff = wf.filter(date_start, date_end, [title])
 
     if len(wff) == 0:
         logging.info("No section with exact title %r", title)
         logging.info("Switching to approximate matching")
 
-        wff = filter_sections(wf, date_start=date_start, date_end=date_end)
+        wff = wf.filter(date_start, date_end)
         titles = [s.title for s in wff]
         logging.debug("List of section titles in near time: %r", titles)
         actual_title = approxmatch.approx_match(title, titles)
@@ -210,7 +193,7 @@ def find_section(wf, title, date_start=None, date_end=None):
 
         logging.info("Matched with: %s", actual_title)
         title = actual_title
-        wff = filter_sections(wf, [title], date_start=date_start, date_end=date_end)
+        wff = wf.filter(date_start, date_end, [title])
 
     logging.debug("For title %r, found sections:", title)
     for sec in wff:
@@ -237,7 +220,7 @@ def find_sections(wf, titles=None, date_start=None, date_end=None):
     match sections that spread across a wide date range."""
 
     if not titles:
-        return filter_sections(wf, date_start=date_start, date_end=date_end)
+        return wf.filter(date_start, date_end)
 
     secs = [find_section(wf, t, date_start, date_end)[-1].section for t in titles]
     first_date = min(sec.first_date() for sec in secs)
@@ -510,13 +493,16 @@ def main():
 
     wf = workfile.Workfile.fromfile(args.workfile)
 
-    date_start = date_end = None
     if args.for_month is not None:
         months = parse_months([args.for_month])
         if len(months) > 1:
             raise InvalidMonthError("Only a single month is supported at the moment")
         date_start = months[0]
         date_end = next_month(date_start)
+    else:
+        # The default date interval is [now - 3 months, now + 1 month)
+        date_start = datetime.date.today() - datetime.timedelta(days=91)
+        date_end = datetime.date.today() + datetime.timedelta(days=30)
 
     if args.list_sections:
         list_titles_dates(wf, args.section_title, date_start=date_start, date_end=date_end)
