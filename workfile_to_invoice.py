@@ -230,6 +230,9 @@ def find_sections(wf, titles=None, date_start=None, date_end=None):
         first_date = date_start
     if date_end is not None and date_end < last_date:
         last_date = date_end
+
+    # Last date is not not-inclusive for Workfile.filter(...)
+    last_date += datetime.timedelta(days=1)
     return wf.filter(first_date, last_date, titles=titles)
 
 
